@@ -1,6 +1,9 @@
 export const USER_ROLES = Object.freeze ({
+
     ADMIN: 'admin',
+
     CUSTOMER: 'customer',
+
     STORE: 'store'
 });
 
@@ -18,4 +21,13 @@ export const ORDER_STATUS = Object.freeze ({
 
     CANCELLED: 'cancelled'
 
+});
+
+export const ORDER_PRIORITY = Object.freeze ({
+
+    LOW: 'low',
+
+    NORMAL: 'normal',
+    
+    HIGH: 'high'
 });

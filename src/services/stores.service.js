@@ -1,4 +1,5 @@
 import { storesRepository } from "../repositories/stores.repository.js";
+import { USER_ROLES } from "../constants/index.js";
 
 export const storesService = {
     getStores: async () => {
@@ -32,7 +33,7 @@ export const storesService = {
             throw error;
         }
 
-        if (user.role !== "store") {
+        if (user.role !== USER_ROLES.STORE) {
             const error = new Error("El owner de una tienda debe tener rol store");
             error.statusCode = 400;
             throw error;

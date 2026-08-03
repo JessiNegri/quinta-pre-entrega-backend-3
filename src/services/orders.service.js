@@ -1,4 +1,5 @@
 import { ordersRepository } from "../repositories/orders.repository.js";
+import { USER_ROLES } from "../constants/index.js";
 
 export const ordersService = {
     getOrders: async () => {
@@ -44,15 +45,20 @@ export const ordersService = {
         const newOrder = {
             ...orderData,
             total,
-            status: "created",
-            priority: "normal"
+            status: ORDER_STATUS.CREATED,
+            priority: ORDER_PRIORITY.NORMAL
         };
 
         return ordersRepository.create(newOrder);
     },
 
     updateOrderStatus: async (id, status) => {
-    //falta comprobar si el status contiene un valor valido
+        const validStatus = Object.values(ORDER_STATUS);
+        if (!validStatus.includes(status)) {
+            const error = new Error("Estado de pedido inválido");
+            error.statusCode = 400;
+            throw error;
+        }
 
         const order = await ordersRepository.updateStatus(id, status);
         if (!order) {

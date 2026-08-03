@@ -1,4 +1,125 @@
-## Funcionamiento base de la API
+# ShipNow API - Pre-entrega Módulo 1
+
+## Descripción
+
+Este proyecto corresponde a la pre-entrega del Módulo 1 del curso de Backend.
+
+La aplicación fue refactorizada utilizando una arquitectura de tres capas para mejorar la organización, el mantenimiento y la escalabilidad del código.
+
+La estructura implementada es:
+
+* **Controller:** recibe las peticiones HTTP y envía las respuestas.
+* **Service:** contiene la lógica de negocio y las validaciones.
+* **Repository:** encapsula el acceso a MongoDB mediante Mongoose.
+
+Además, se implementó una configuración centralizada de variables de entorno y un archivo de constantes para evitar el uso de strings mágicos.
+
+---
+
+## Tecnologías utilizadas
+
+* Node.js
+* Express
+* MongoDB
+* Mongoose
+* dotenv
+
+---
+
+## Instalación
+
+Clonar el repositorio:
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+```
+
+Instalar dependencias:
+
+```bash
+npm install
+```
+
+Crear un archivo `.env` utilizando como referencia el archivo `.env.example`.
+
+Variables necesarias:
+
+```env
+PORT=
+MONGODB_URI=
+NODE_ENV=
+```
+
+---
+
+## Ejecución
+
+Modo desarrollo:
+
+```bash
+npm run dev
+```
+
+Modo producción:
+
+```bash
+npm start
+```
+
+---
+
+## Arquitectura
+
+El proyecto fue organizado utilizando una arquitectura por capas:
+
+```
+src/
+│
+├── config/
+├── constants/
+├── controllers/
+├── models/
+├── repositories/
+├── routes/
+└── services/
+```
+
+### Controller
+
+Gestiona las solicitudes HTTP y devuelve la respuesta correspondiente.
+
+### Service
+
+Contiene la lógica de negocio y las validaciones necesarias antes de acceder a la base de datos.
+
+### Repository
+
+Es la única capa que conoce Mongoose y se encarga del acceso a MongoDB.
+
+---
+
+## Variables de entorno
+
+El proyecto valida automáticamente las siguientes variables al iniciar:
+
+* PORT
+* MONGODB_URI
+* NODE_ENV
+
+Si alguna de ellas no existe, la aplicación finaliza mostrando un mensaje descriptivo.
+
+---
+
+## Autor
+
+Jessica Negri
+
+
+
+
+
+
+
 
 ShipNow API es una aplicación backend construida con Node.js, Express y MongoDB.
 
