@@ -2,8 +2,16 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const requiredEnvVars = ["PORT", "MONGODB_URI", "NODE_ENV"];
+
+requiredEnvVars.forEach((envVar) => {
+    if (!process.env[envVar]) {
+        throw new Error(`Falta la variable de entorno: ${envVar}`);
+    }
+});
+
 export const envConfig = {
-    port: process.env.PORT || 8080,
-    mongoUri: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/shipnow-api-85760",
-    nodeEnv: process.env.NODE_ENV || "development"
+    port: process.env.PORT,
+    mongoUri: process.env.MONGODB_URI,
+    nodeEnv: process.env.NODE_ENV
 };
