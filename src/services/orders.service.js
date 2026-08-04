@@ -1,5 +1,5 @@
 import { ordersRepository } from "../repositories/orders.repository.js";
-import { USER_ROLES } from "../constants/index.js";
+import { ORDER_STATUS, ORDER_PRIORITY } from "../constants/index.js";
 
 export const ordersService = {
     getOrders: async () => {
@@ -8,6 +8,7 @@ export const ordersService = {
 
     getOrderById: async (id) => {
         const order = await ordersRepository.findById(id);
+
         if (!order) {
             const error = new Error("Pedido no encontrado");
             error.statusCode = 404;
@@ -27,26 +28,39 @@ export const ordersService = {
         }
 
         const userFound = await ordersRepository.findCustomerById(customer);
+
         if (!userFound) {
             const error = new Error("Usuario no encontrado");
             error.statusCode = 404;
             throw error;
         }
 
-        const storeFound = await ordersRepository.findStoreById(store)
+        const storeFound = await ordersRepository.findStoreById(store);
+
         if (!storeFound) {
             const error = new Error("Tienda no encontrada");
             error.statusCode = 404;
             throw error;
         }
 
-        const total = items.reduce((accumulator, item) => accumulator + item.price * item.quantity, 0);
+        const validPriorities = Object.values(ORDER_PRIORITY);
+
+        if (priority && !validPriorities.includes(priority)) {
+            const error = new Error("Prioridad de pedido inválida");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const total = items.reduce(
+            (accumulator, item) => accumulator + item.price * item.quantity,
+            0
+        );
 
         const newOrder = {
             ...orderData,
             total,
             status: ORDER_STATUS.CREATED,
-            priority: ORDER_PRIORITY.NORMAL
+            priority: priority || ORDER_PRIORITY.NORMAL
         };
 
         return ordersRepository.create(newOrder);
@@ -54,6 +68,7 @@ export const ordersService = {
 
     updateOrderStatus: async (id, status) => {
         const validStatus = Object.values(ORDER_STATUS);
+
         if (!validStatus.includes(status)) {
             const error = new Error("Estado de pedido inválido");
             error.statusCode = 400;
@@ -61,6 +76,7 @@ export const ordersService = {
         }
 
         const order = await ordersRepository.updateStatus(id, status);
+
         if (!order) {
             const error = new Error("Pedido no encontrado");
             error.statusCode = 404;
@@ -72,6 +88,7 @@ export const ordersService = {
 
     deleteOrder: async (id) => {
         const order = await ordersRepository.delete(id);
+
         if (!order) {
             const error = new Error("Pedido no encontrado");
             error.statusCode = 404;
