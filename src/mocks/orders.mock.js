@@ -1,8 +1,9 @@
 import { faker } from '@faker-js/faker';
 import { ORDER_STATUS } from '../constants/orderstatus.js';
+import { ORDER_PRIORITY } from '../constants/orderpriority.js';
 
 export const generateMockOrder = (customerId, storeId) => {
-    const item = [
+    const items = [
         {
             name: faker.commerce.productName(),
             quantity: faker.number.int({ min: 1, max: 5 }),
@@ -10,7 +11,7 @@ export const generateMockOrder = (customerId, storeId) => {
         }
     ]
 
-    const total = item.reduce((acc, item) => {
+    const total = items.reduce((acc, item) => {
         return acc + (item.price * item.quantity);
     }, 0);
 
@@ -21,12 +22,16 @@ export const generateMockOrder = (customerId, storeId) => {
         deliveryAddress: faker.location.streetAddress(),
         total,
         status: faker.helpers.arrayElement(Object.values(ORDER_STATUS)),
-        priority: faker.helpers.arrayElement(['low', 'normal', 'high'])
+        priority: faker.helpers.arrayElement(Object.values(ORDER_PRIORITY))
     };
 };
 
 export const generateMockOrders = (quantity, customers, stores) => {
     const orders = [];
+
+    if (!customers.length || !stores.length) {
+        return orders;
+    }
 
     for (let i = 0; i < quantity; i++) {
         const customer = faker.helpers.arrayElement(customers);

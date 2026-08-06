@@ -1,5 +1,6 @@
 import { ordersRepository } from "../repositories/orders.repository.js";
-import { ORDER_STATUS, ORDER_PRIORITY } from "../constants/index.js";
+import { ORDER_STATUS } from "../constants/orderstatus.js";
+import { ORDER_PRIORITY } from "../constants/orderpriority.js";
 
 export const ordersService = {
     getOrders: async () => {

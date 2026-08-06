@@ -1,5 +1,5 @@
 import { usersRepository } from "../repositories/users.repository.js";
-import { USER_ROLES } from "../constants/index.js";
+import { USER_ROLES } from "../constants/userroles.js";
 
 export const usersService = {
     getUsers: async () => {

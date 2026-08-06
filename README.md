@@ -1,505 +1,455 @@
-# ShipNow API - Pre-entrega Módulo 1
+# Módulo 2 - Mocking y Datos de Prueba
+## Objetivo del módulo
 
-## Descripción
+En esta etapa se incorporó un sistema de Mocking dentro del proyecto ShipNow API.
 
-Este proyecto corresponde a la pre-entrega del Módulo 1 del curso de Backend.
+El objetivo es generar información simulada pero consistente para poder probar el comportamiento de la API sin depender de datos cargados manualmente en MongoDB.
 
-La aplicación fue refactorizada utilizando una arquitectura de tres capas para mejorar la organización, el mantenimiento y la escalabilidad del código.
+Trabajar con datos mock permite:
 
-La estructura implementada es:
+Poblar rápidamente la base de datos.
+Simular escenarios reales.
+Validar endpoints existentes.
+Facilitar pruebas durante el desarrollo.
+Mantener relaciones entre entidades sin crear datos manualmente.
 
-* **Controller:** recibe las peticiones HTTP y envía las respuestas.
-* **Service:** contiene la lógica de negocio y las validaciones.
-* **Repository:** encapsula el acceso a MongoDB mediante Mongoose.
+# ¿Qué es Mocking?
 
-Además, se implementó una configuración centralizada de variables de entorno y un archivo de constantes para evitar el uso de strings mágicos.
+Mocking consiste en generar datos falsos pero con una estructura compatible con los modelos reales del proyecto.
 
----
+Los datos generados son ficticios y tienen como objetivo permitir pruebas de funcionalidades, endpoints y relaciones entre entidades.
 
-## Tecnologías utilizadas
+En este módulo se incorporó generación automática de:
 
-* Node.js
-* Express
-* MongoDB
-* Mongoose
-* dotenv
+Usuarios.
+Comercios.
+Pedidos.
+Entregas.
 
----
+Los datos generados respetan:
 
-## Instalación
+Roles válidos.
+Estados permitidos.
+Prioridades disponibles.
+Relaciones entre entidades.
 
-Clonar el repositorio:
+# Librerías incorporadas
 
-```bash
-git clone <URL_DEL_REPOSITORIO>
-```
+Para generar información aleatoria se utilizó FakerJS.
 
-Instalar dependencias:
+Instalación:
 
-```bash
-npm install
-```
+npm install @faker-js/faker
 
-Crear un archivo `.env` utilizando como referencia el archivo `.env.example`.
+También se incorporó bcryptjs para generar contraseñas compatibles con los usuarios reales del sistema.
 
-Variables necesarias:
+Instalación:
 
-```env
-PORT=
-MONGODB_URI=
-NODE_ENV=
-```
+npm install bcryptjs
 
----
+# Endpoints incorporados
 
-## Ejecución
+Se creó un router específico para mocking:
 
-Modo desarrollo:
+/api/mocks
 
-```bash
-npm run dev
-```
+Los endpoints disponibles son:
 
-Modo producción:
+## GET /api/mocks/mockingusers
 
-```bash
-npm start
-```
+Genera usuarios falsos utilizando FakerJS.
 
----
-
-## Arquitectura
-
-El proyecto fue organizado utilizando una arquitectura por capas:
-
-```
-src/
-│
-├── config/
-├── constants/
-├── controllers/
-├── models/
-├── repositories/
-├── routes/
-└── services/
-```
-
-### Controller
-
-Gestiona las solicitudes HTTP y devuelve la respuesta correspondiente.
-
-### Service
-
-Contiene la lógica de negocio y las validaciones necesarias antes de acceder a la base de datos.
-
-### Repository
-
-Es la única capa que conoce Mongoose y se encarga del acceso a MongoDB.
-
----
-
-## Variables de entorno
-
-El proyecto valida automáticamente las siguientes variables al iniciar:
-
-* PORT
-* MONGODB_URI
-* NODE_ENV
-
-Si alguna de ellas no existe, la aplicación finaliza mostrando un mensaje descriptivo.
-
----
-
-## Autor
-
-Jessica Negri
-
-
-
-
-
-
-
-
-ShipNow API es una aplicación backend construida con Node.js, Express y MongoDB.
-
-En su estado base, la API permite trabajar con tres entidades principales:
-
-* Usuarios
-* Comercios
-* Pedidos
-
-La idea del proyecto es simular una API simple de logística/envíos.
-
-Un usuario puede representar a un cliente.
-Un comercio representa el lugar desde donde sale el pedido.
-Un pedido representa una solicitud de envío asociada a un usuario y a un comercio.
-
-### Flujo principal
-
-El flujo básico de la API es:
-
-1. Crear un usuario.
-2. Crear un comercio.
-3. Crear un pedido usando el ID del usuario y el ID del comercio.
-4. Consultar los pedidos.
-5. Actualizar el estado de un pedido.
-
-El pedido contiene una lista de items, una dirección de entrega, un total calculado y un estado.
-
-### Entidades principales
-
-### User
-
-Representa a un usuario dentro del sistema.
-
-Campos principales:
-
-```json
-{
-  "firstName": "Martina",
-  "lastName": "Gómez",
-  "email": "martina@test.com",
-  "password": "123456",
-  "role": "customer"
-}
-```
-
-Roles disponibles:
-
-```txt
-admin
-customer
-store
-```
-
-En esta versión base, el usuario se usa principalmente como cliente del pedido.
-
----
-
-### Store
-
-Representa un comercio.
-
-Campos principales:
-
-```json
-{
-  "name": "Kiosco Centro",
-  "address": "Av. Siempre Viva 742",
-  "owner": "ID_DEL_USUARIO"
-}
-```
-
-El campo `owner` guarda el ID de un usuario asociado al comercio.
-
----
-
-### Order
-
-Representa un pedido o envío.
-
-Campos principales:
-
-```json
-{
-  "customer": "ID_DEL_USUARIO",
-  "store": "ID_DEL_COMERCIO",
-  "deliveryAddress": "Av. Siempre Viva 742",
-  "items": [
-    {
-      "name": "Caja mediana",
-      "quantity": 2,
-      "price": 1500
-    }
-  ]
-}
-```
-
-Cuando se crea un pedido, la API calcula el total automáticamente recorriendo los items.
+Los datos son devueltos como respuesta y no se guardan en MongoDB.
 
 Ejemplo:
 
-```txt
-2 unidades x $1500 = $3000
-```
+GET /api/mocks/mockingusers?qty=2
 
-El pedido se crea inicialmente con estado:
+Respuesta:
 
-```txt
-created
-```
+{
+  "status": "success",
+  "payload": [
+    {
+      "firstName": "Ana",
+      "lastName": "Perez",
+      "email": "ana@test.com",
+      "role": "customer"
+    }
+  ]
+}
 
-Estados posibles del pedido:
+## GET /api/mocks/mockingorders
 
-```txt
+Genera pedidos falsos utilizando datos simulados.
+
+Los pedidos contienen:
+
+Cliente.
+Comercio.
+Items.
+Dirección de entrega.
+Total.
+Estado.
+Prioridad.
+
+Los datos solamente se devuelven en la respuesta y no se almacenan en MongoDB.
+
+Ejemplo:
+
+GET /api/mocks/mockingorders?qty=2
+
+Respuesta:
+
+{
+  "status": "success",
+  "payload": [
+    {
+      "customer": "ID_USUARIO",
+      "store": "ID_STORE",
+      "items": [
+        {
+          "name": "Producto ejemplo",
+          "quantity": 2,
+          "price": 1500
+        }
+      ],
+      "deliveryAddress": "Dirección ejemplo",
+      "total": 3000,
+      "status": "created",
+      "priority": "normal"
+    }
+  ]
+}
+
+## POST /api/mocks/generateData
+
+Genera datos simulados y los inserta en MongoDB.
+
+Permite crear:
+
+Usuarios.
+Comercios.
+Pedidos.
+Entregas.
+
+Ejemplo:
+
+POST /api/mocks/generateData
+
+Body:
+
+{
+  "users": 10,
+  "stores": 5,
+  "orders": 20
+}
+
+Respuesta:
+
+{
+  "status": "success",
+  "payload": {
+    "users": 10,
+    "stores": 5,
+    "orders": 20,
+    "deliveries": 20
+  }
+}
+
+# Carpeta mocks
+
+Se creó una carpeta específica para la generación de datos simulados.
+
+Estructura:
+
+src/mocks/
+
+users.mock.js
+
+stores.mock.js
+
+orders.mock.js
+
+deliveries.mock.js
+
+Esta separación permite mantener organizada la lógica de creación de información falsa.
+
+# users.mock.js
+
+Este archivo es responsable de generar usuarios falsos.
+
+Utiliza FakerJS para crear:
+
+Nombres.
+Apellidos.
+Correos electrónicos.
+
+También utiliza bcryptjs para generar contraseñas encriptadas:
+
+const password = await bcrypt.hash("coder123",10)
+
+Los roles utilizados se obtienen desde las constantes del proyecto:
+
+USER_ROLES
+
+Roles disponibles:
+
+admin
+customer
+store
+driver
+
+La función:
+
+generateMockUsers(quantity)
+
+permite generar múltiples usuarios automáticamente.
+
+# stores.mock.js
+
+Este archivo genera comercios falsos.
+
+Cada comercio queda asociado a un usuario propietario.
+
+Los datos generados incluyen:
+
+Nombre.
+Dirección.
+Usuario propietario.
+Estado activo.
+
+Ejemplo:
+
+{
+  "name": "Store Demo",
+  "address": "Dirección ejemplo",
+  "owner": "ID_USUARIO",
+  "isActive": true
+}
+
+# orders.mock.js
+
+Este archivo genera pedidos falsos.
+
+Cada pedido contiene:
+
+customer.
+store.
+items.
+deliveryAddress.
+total.
+status.
+priority.
+
+Los productos son generados utilizando FakerJS.
+
+El total del pedido se calcula automáticamente recorriendo los items:
+
+total = cantidad * precio
+
+Los estados disponibles utilizan la constante:
+
+ORDER_STATUS
+
+Estados posibles:
+
 created
 assigned
 picked_up
 in_transit
 delivered
 cancelled
-```
 
-### Endpoints disponibles
+La prioridad utiliza:
 
-### Health check
+ORDER_PRIORITY
 
-Permite verificar que la API está funcionando.
+Valores posibles:
 
-```http
-GET /health
-```
+low
+normal
+high
 
-Respuesta esperada:
+# deliveries.mock.js
 
-```json
+Este archivo genera entregas asociadas a pedidos.
+
+Cada entrega contiene:
+
+Pedido asociado.
+Repartidor asignado.
+Estado.
+Fecha de entrega.
+
+La relación generada es:
+
+User (driver)
+
+        ↓
+
+Delivery
+
+        ↓
+
+Order
+
+# Service de Mocking
+
+Archivo:
+
+src/services/mocks.service.js
+
+Contiene la lógica de negocio para la generación de datos.
+
+El proceso de generación masiva realiza:
+
+Generación de usuarios.
+Inserción de usuarios en MongoDB.
+Selección de usuarios con rol store.
+Generación de comercios.
+Inserción de comercios.
+Generación de pedidos asociados.
+Inserción de pedidos.
+Generación de entregas.
+Inserción de entregas.
+Retorno de cantidades creadas.
+
+# Controller de Mocking
+
+Archivo:
+
+src/controllers/mocks.controller.js
+
+El controlador recibe las solicitudes HTTP y delega la lógica al service.
+
+Los endpoints manejados son:
+
+GET /api/mocks/mockingusers
+
+GET /api/mocks/mockingorders
+
+POST /api/mocks/generateData
+
+# Repository
+
+La persistencia se realiza mediante repositories.
+
+Se utilizaron métodos de inserción masiva:
+
+insertManyUsers()
+
+insertManyStores()
+
+insertManyOrders()
+
+insertManyDeliveries()
+
+Esto permite mantener la separación entre la lógica de negocio y el acceso a MongoDB.
+
+Relaciones entre entidades
+
+Los datos generados mantienen las relaciones del sistema:
+
+Usuario
+
+ ↓
+
+Comercio
+
+ ↓
+
+Pedido
+
+ ↓
+
+Entrega
+
+Esto permite simular escenarios similares a los reales.
+
+## Arquitectura implementada
+
+La arquitectura utilizada mantiene la separación por capas:
+
+Routes
+
+   ↓
+
+Controllers
+
+   ↓
+
+Services
+
+   ↓
+
+Mocks / Repositories
+
+   ↓
+
+MongoDB
+
+El router solamente recibe las peticiones.
+
+El controller maneja la comunicación HTTP.
+
+El service contiene la lógica de generación.
+
+Los repositories manejan la persistencia.
+
+# Constantes utilizadas
+
+Para evitar valores escritos manualmente se utilizan constantes:
+
+USER_ROLES.
+ORDER_STATUS.
+ORDER_PRIORITY.
+
+Esto asegura que los datos generados sean compatibles con los modelos del sistema.
+
+# Pruebas realizadas
+
+Los endpoints fueron probados utilizando Postman.
+
+# Generación de usuarios
+GET /api/mocks/mockingusers?qty=2
+
+Resultado:
+
+Se generan usuarios falsos correctamente sin guardarlos en MongoDB.
+
+# Generación de pedidos
+GET /api/mocks/mockingorders?qty=2
+
+Resultado:
+
+Se generan pedidos con:
+
+Items.
+Estados válidos.
+Prioridades válidas.
+Relaciones entre entidades.
+
+# Generación de datos completos
+POST /api/mocks/generateData
+
+Resultado:
+
+Se insertan correctamente:
+
+Usuarios.
+Comercios.
+Pedidos.
+Entregas.
+
+Ejemplo:
+
 {
-  "status": "success",
-  "message": "API funcionando correctamente"
+  "users": 10,
+  "stores": 5,
+  "orders": 20,
+  "deliveries": 20
 }
-```
+Autor
 
----
-
-## Users
-
-### Obtener usuarios
-
-```http
-GET /api/users
-```
-
-### Obtener usuario por ID
-
-```http
-GET /api/users/:uid
-```
-
-### Crear usuario
-
-```http
-POST /api/users
-```
-
-Body de ejemplo:
-
-```json
-{
-  "firstName": "Martina",
-  "lastName": "Gómez",
-  "email": "martina@test.com",
-  "password": "123456",
-  "role": "customer"
-}
-```
-
-### Actualizar usuario
-
-```http
-PUT /api/users/:uid
-```
-
-### Eliminar usuario
-
-```http
-DELETE /api/users/:uid
-```
-
----
-
-## Stores
-
-### Obtener comercios
-
-```http
-GET /api/stores
-```
-
-### Obtener comercio por ID
-
-```http
-GET /api/stores/:sid
-```
-
-### Crear comercio
-
-```http
-POST /api/stores
-```
-
-Body de ejemplo:
-
-```json
-{
-  "name": "Kiosco Centro",
-  "address": "Av. Siempre Viva 742",
-  "owner": "ID_DEL_USUARIO"
-}
-```
-
-### Actualizar comercio
-
-```http
-PUT /api/stores/:sid
-```
-
-### Eliminar comercio
-
-```http
-DELETE /api/stores/:sid
-```
-
----
-
-## Orders
-
-### Obtener pedidos
-
-```http
-GET /api/orders
-```
-
-### Obtener pedido por ID
-
-```http
-GET /api/orders/:oid
-```
-
-### Crear pedido
-
-```http
-POST /api/orders
-```
-
-Body de ejemplo:
-
-```json
-{
-  "customer": "ID_DEL_USUARIO",
-  "store": "ID_DEL_COMERCIO",
-  "deliveryAddress": "Av. Siempre Viva 742",
-  "items": [
-    {
-      "name": "Caja mediana",
-      "quantity": 2,
-      "price": 1500
-    },
-    {
-      "name": "Sobre chico",
-      "quantity": 1,
-      "price": 800
-    }
-  ]
-}
-```
-
-Respuesta esperada:
-
-```json
-{
-  "status": "success",
-  "payload": {
-    "_id": "ID_DEL_PEDIDO",
-    "customer": "ID_DEL_USUARIO",
-    "store": "ID_DEL_COMERCIO",
-    "items": [
-      {
-        "name": "Caja mediana",
-        "quantity": 2,
-        "price": 1500
-      },
-      {
-        "name": "Sobre chico",
-        "quantity": 1,
-        "price": 800
-      }
-    ],
-    "deliveryAddress": "Av. Siempre Viva 742",
-    "total": 3800,
-    "status": "created"
-  }
-}
-```
-
-### Actualizar estado del pedido
-
-```http
-PUT /api/orders/:oid/status
-```
-
-Body de ejemplo:
-
-```json
-{
-  "status": "in_transit"
-}
-```
-
-### Eliminar pedido
-
-```http
-DELETE /api/orders/:oid
-```
-
----
-
-## Formato general de respuestas
-
-Las respuestas exitosas siguen una estructura simple:
-
-```json
-{
-  "status": "success",
-  "payload": {}
-}
-```
-
-Las respuestas de error, en esta versión base, todavía se manejan de forma simple desde las rutas:
-
-```json
-{
-  "status": "error",
-  "message": "Usuario no encontrado"
-}
-```
-
-Más adelante, el proyecto será refactorizado para incorporar una capa centralizada de manejo de errores.
-
-## Estado actual del proyecto
-
-Esta versión base de ShipNow funciona, pero todavía no representa una API completamente profesional.
-
-Actualmente el proyecto tiene:
-
-```txt
-app.js
-server.js
-models
-routes
-controllers
-services
-repositories
-config/db.js
-config/env.js
-```
-
-Todavía no incorpora:
-
-```txt
-middleware global de errores
-logger profesional
-Swagger
-tests automatizados
-Multer
-Docker
-```
-
-Durante el curso, la API será mejorada progresivamente para separar responsabilidades, mejorar la mantenibilidad y acercarse a una estructura más profesional.
-
-Clase 1:
-```txt 
--> Mejoramos la arquitectura añadiendo "controllers", "services" y "repositories" para separar responsabilidades.
-
--> Añadimos el archivo ./config/env.js para centralizar la configuración de variables de entorno.
-```
+Jessica Negri

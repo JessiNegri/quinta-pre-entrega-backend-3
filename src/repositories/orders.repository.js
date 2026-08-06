@@ -1,6 +1,7 @@
 import OrderModel from "../models/order.model.js";
 import UserModel from "../models/user.model.js";
 import StoreModel from "../models/store.model.js";
+import DeliveryModel from "../models/delivery.model.js";
 
 export const ordersRepository = {
     findAll: async () => {
@@ -45,5 +46,10 @@ export const ordersRepository = {
 
     insertManyStores: async (stores) => {
         return StoreModel.insertMany(stores);
-    }
+    },
+
+    insertManyDeliveries: async (deliveries) => {
+    return DeliveryModel.insertMany(deliveries);
+}
+
 };

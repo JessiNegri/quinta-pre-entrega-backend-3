@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 
+import { ORDER_STATUS } from "../constants/orderstatus.js";
+import { ORDER_PRIORITY } from "../constants/orderpriority.js";
+
 const orderItemSchema = new mongoose.Schema(
     {
         name: {
@@ -46,8 +49,8 @@ const orderSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["created", "assigned", "picked_up", "in_transit", "delivered", "cancelled"],
-            default: "created"
+            enum: Object.values(ORDER_STATUS),
+            default: ORDER_STATUS.CREATED
         },
         priority: {
             type: String,

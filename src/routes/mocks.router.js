@@ -1,30 +1,13 @@
-import { generateMockUser } from '../mocks/users.mock.js';
-import { generateMockOrders } from '../mocks/orders.mock.js';
-import { generateData } from '../controllers/mocks.controller.js';
-import { Router } from 'express';
+import { Router } from "express";
+import { generateMockUsers, generateMockOrders, generateData } from "../controllers/mocks.controller.js";
 
-router.get('/mockingusers', async (req, res) => {
-    
-        const users = await generateMockUser();
+const router = Router();
 
-        res.status(200).json({
-            status: 'success',
-            payload: users
-        })
-    }
-)
+router.get("/mockingusers", generateMockUsers);
 
-router.get('/mockingorders', (req, res) => {
-    
-        const orders = generateMockOrders(5);
-        
-        res.status(200).json({
-                status: 'success',
-                payload: orders
-            })
-    }
-)
+router.get("/mockingorders", generateMockOrders);
 
-router.post('/generateData', generateData)
+router.post("/generateData", generateData);
 
 export default router;
+

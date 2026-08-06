@@ -1,8 +1,7 @@
-export const DRIVER_ROLES = Object.freeze({
-
-    DRIVER: "driver",
+export const DRIVER_STATUS = Object.freeze({
     
     AVAILABLE: "available",
     
     UNAVAILABLE: "unavailable",
 });
+

@@ -1,5 +1,5 @@
 import { storesRepository } from "../repositories/stores.repository.js";
-import { USER_ROLES } from "../constants/index.js";
+import { USER_ROLES } from "../constants/userroles.js";
 
 export const storesService = {
     getStores: async () => {
