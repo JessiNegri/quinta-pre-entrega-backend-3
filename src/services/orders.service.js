@@ -1,6 +1,7 @@
 import { ordersRepository } from "../repositories/orders.repository.js";
 import { ORDER_STATUS } from "../constants/orderstatus.js";
 import { ORDER_PRIORITY } from "../constants/orderpriority.js";
+import { createError } from "../utils/apiResponse.js";
 
 export const ordersService = {
     getOrders: async () => {
@@ -11,9 +12,7 @@ export const ordersService = {
         const order = await ordersRepository.findById(id);
 
         if (!order) {
-            const error = new Error("Pedido no encontrado");
-            error.statusCode = 404;
-            throw error;
+            throw createError("ORDER_NOT_FOUND");
         }
 
         return order;
@@ -23,33 +22,30 @@ export const ordersService = {
         const { customer, store, items, deliveryAddress, priority } = orderData;
 
         if (!customer || !store || !items || !deliveryAddress) {
-            const error = new Error("Faltan datos obligatorios");
-            error.statusCode = 400;
-            throw error;
+            throw createError("VALIDATION_ERROR");
         }
 
         const userFound = await ordersRepository.findCustomerById(customer);
 
         if (!userFound) {
-            const error = new Error("Usuario no encontrado");
-            error.statusCode = 404;
-            throw error;
+            throw createError("USER_NOT_FOUND");
         }
 
         const storeFound = await ordersRepository.findStoreById(store);
 
         if (!storeFound) {
-            const error = new Error("Tienda no encontrada");
-            error.statusCode = 404;
-            throw error;
+            throw createError("STORE_NOT_FOUND");
         }
 
-        const validPriorities = Object.values(ORDER_PRIORITY);
+        if (!Array.isArray(items) || items.length === 0) {
+            throw createError("ORDER_ITEMS_REQUIRED");
+        }
 
-        if (priority && !validPriorities.includes(priority)) {
-            const error = new Error("Prioridad de pedido inválida");
-            error.statusCode = 400;
-            throw error;
+        if (
+            priority &&
+            !Object.values(ORDER_PRIORITY).includes(priority)
+        ) {
+            throw createError("INVALID_ORDER_PRIORITY");
         }
 
         const total = items.reduce(
@@ -68,20 +64,14 @@ export const ordersService = {
     },
 
     updateOrderStatus: async (id, status) => {
-        const validStatus = Object.values(ORDER_STATUS);
-
-        if (!validStatus.includes(status)) {
-            const error = new Error("Estado de pedido inválido");
-            error.statusCode = 400;
-            throw error;
+        if (!Object.values(ORDER_STATUS).includes(status)) {
+            throw createError("INVALID_ORDER_STATUS");
         }
 
         const order = await ordersRepository.updateStatus(id, status);
 
         if (!order) {
-            const error = new Error("Pedido no encontrado");
-            error.statusCode = 404;
-            throw error;
+            throw createError("ORDER_NOT_FOUND");
         }
 
         return order;
@@ -91,9 +81,7 @@ export const ordersService = {
         const order = await ordersRepository.delete(id);
 
         if (!order) {
-            const error = new Error("Pedido no encontrado");
-            error.statusCode = 404;
-            throw error;
+            throw createError("ORDER_NOT_FOUND");
         }
 
         return order;

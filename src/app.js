@@ -1,10 +1,13 @@
 import express from "express";
 import cors from "cors";
+
 import usersRouter from "./routes/users.router.js";
 import storesRouter from "./routes/stores.router.js";
 import ordersRouter from "./routes/orders.router.js";
-
 import mocksRouter from "./routes/mocks.router.js";
+
+import { notFoundHandler } from "./middlewares/notFoundHandler.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
 
@@ -31,17 +34,14 @@ app.use("/api/orders", ordersRouter);
 
 //Protección de mocks en router para no quedar expuesto en producción
 if (process.env.NODE_ENV !== "production") {
-
     app.use('/api/mocks', mocksRouter);
-
 }
 
-app.use((req, res) => {
-    res.status(404).json({
-        status: "error",
-        message: "Ruta no encontrada"
-    });
-});
+// Middleware para rutas inexistentes
+app.use(notFoundHandler);
+
+// Middleware global de manejo de errores
+app.use(errorHandler);
 
 export default app;
 

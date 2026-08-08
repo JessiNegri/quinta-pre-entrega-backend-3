@@ -1,56 +1,53 @@
 import { mocksService } from "../services/mocks.service.js";
+import { successResponse } from "../utils/apiResponse.js";
 
-export const generateMockUsers = async (req, res) => {
+export const generateMockUsers = async (req, res, next) => {
     try {
         const qty = Number(req.query.qty) || 10;
 
         const users = await mocksService.getMockUsers(qty);
 
-        res.json({
-            status: "success",
+        return successResponse(res, {
+            message: "Usuarios mock generados correctamente",
             payload: users
-        });
+        });     
 
     } catch (error) {
-        res.status(500).json({
-            status: "error",
-            message: error.message
-        });
+        next(error);
     }
 };
 
-export const generateMockOrders = async (req, res) => {
+export const generateMockOrders = async (req, res, next) => {
     try {
         const qty = Number(req.query.qty) || 10;
 
         const orders = await mocksService.getMockOrders(qty);
 
-        res.json({
-            status: "success",
+        return successResponse(res, {
+            message: "Pedidos mock generados correctamente",
             payload: orders
         });
 
     } catch (error) {
-        res.status(500).json({
-            status: "error",
-            message: error.message
-        });
+        next(error);
     }
 };
 
-export const generateData = async (req, res) => {
+export const generateData = async (req, res, next) => {
     try {
         const result = await mocksService.generateData(req.body);
 
-        res.status(201).json({
-            status: "success",
+        return successResponse(res, {
+            statusCode: 201,
+            message: "Datos de prueba generados correctamente",
             payload: result
         });
 
     } catch (error) {
-        res.status(500).json({
-            status: "error",
-            message: error.message
-        });
+        next(error);
     }
 };
+
+
+
+

@@ -1,139 +1,530 @@
-# Módulo 2 - Mocking y Datos de Prueba
-## Objetivo del módulo
+# Pre-entrega Módulo 3 — Manejo profesional de errores
 
-En esta etapa se incorporó un sistema de Mocking dentro del proyecto ShipNow API.
+## Descripción
 
-El objetivo es generar información simulada pero consistente para poder probar el comportamiento de la API sin depender de datos cargados manualmente en MongoDB.
+En esta tercera etapa del proyecto ShipNow API se incorporó un sistema profesional y centralizado para el manejo de errores.
 
-Trabajar con datos mock permite:
+El objetivo principal fue evitar que cada controller o ruta tenga que construir sus propias respuestas de error y centralizar esta responsabilidad en una única capa.
 
-Poblar rápidamente la base de datos.
-Simular escenarios reales.
-Validar endpoints existentes.
-Facilitar pruebas durante el desarrollo.
-Mantener relaciones entre entidades sin crear datos manualmente.
+Para esto se implementaron:
 
-# ¿Qué es Mocking?
+* Errores personalizados del dominio.
+* Diccionario centralizado de errores.
+* Funciones reutilizables para respuestas HTTP.
+* Middleware global de manejo de errores.
+* Middleware para rutas inexistentes.
+* Validaciones dentro de los services.
+* Manejo de errores en el módulo de mocking.
+* Manejo de IDs de MongoDB inválidos.
+* Respuestas de error uniformes y predecibles.
 
-Mocking consiste en generar datos falsos pero con una estructura compatible con los modelos reales del proyecto.
+La arquitectura continúa respetando la separación por capas implementada en las entregas anteriores.
 
-Los datos generados son ficticios y tienen como objetivo permitir pruebas de funcionalidades, endpoints y relaciones entre entidades.
+---
 
-En este módulo se incorporó generación automática de:
+# Objetivos del módulo
 
-Usuarios.
-Comercios.
-Pedidos.
-Entregas.
+Durante esta pre-entrega se buscó:
 
-Los datos generados respetan:
+* Centralizar el manejo de errores.
+* Evitar respuestas de error dispersas en controllers y rutas.
+* Crear errores personalizados para representar situaciones del dominio.
+* Unificar el formato de las respuestas de error.
+* Detectar los errores en la capa correspondiente.
+* Delegar la respuesta final al middleware global.
+* Validar cantidades recibidas por el módulo de mocks.
+* Controlar valores negativos o inválidos.
+* Mantener la arquitectura por capas.
 
-Roles válidos.
-Estados permitidos.
-Prioridades disponibles.
-Relaciones entre entidades.
+---
 
-# Librerías incorporadas
+# Estructura relacionada con el manejo de errores
 
-Para generar información aleatoria se utilizó FakerJS.
+La estructura incorporada al proyecto es:
 
-Instalación:
+src/
+│
+├── config/
+├── constants/
+├── controllers/
+├── middlewares/
+│   ├── errorHandler.js
+│   └── notFoundHandler.js
+├── mocks/
+├── models/
+├── repositories/
+├── routes/
+├── services/
+└── utils/
+    ├── apiResponse.js
+    └── errorDictionary.js
 
-npm install @faker-js/faker
+---
 
-También se incorporó bcryptjs para generar contraseñas compatibles con los usuarios reales del sistema.
+# Diccionario de errores
 
-Instalación:
+Archivo:
 
-npm install bcryptjs
+src/utils/errorDictionary.js
 
-# Endpoints incorporados
+Se creó un diccionario centralizado que contiene los errores utilizados por la aplicación.
 
-Se creó un router específico para mocking:
+Cada error define:
+
+* Código.
+* Código HTTP.
+* Mensaje predeterminado.
+
+Ejemplo:
+
+USER_NOT_FOUND: {
+    statusCode: 404,
+    message: "Usuario no encontrado"
+}
+
+Entre los errores definidos se encuentran:
+
+VALIDATION_ERROR
+USER_NOT_FOUND
+STORE_NOT_FOUND
+ORDER_NOT_FOUND
+INVALID_USER_ROLE
+INVALID_ORDER_STATUS
+ORDER_ITEMS_REQUIRED
+USER_ALREADY_EXISTS
+INVALID_MOCK_QUANTITY
+DRIVER_NOT_FOUND
+ROUTE_NOT_FOUND
+INTERNAL_SERVER_ERROR
+
+Esto evita repetir mensajes y códigos HTTP en diferentes partes de la aplicación.
+
+---
+
+# Respuestas HTTP
+
+Archivo:
+
+src/utils/apiResponse.js
+
+Se crearon funciones reutilizables para mantener una estructura uniforme en las respuestas.
+
+## Respuestas exitosas
+
+La función:
+
+successResponse()
+
+permite devolver respuestas con el siguiente formato:
+
+{
+  "status": "success",
+  "message": "Lista de usuarios",
+  "payload": []
+}
+
+## Respuestas de error
+
+La función:
+
+errorResponse()
+
+genera respuestas con la siguiente estructura:
+
+{
+  "status": "error",
+  "error": "USER_NOT_FOUND",
+  "message": "Usuario no encontrado"
+}
+
+De esta manera, todas las respuestas de error mantienen una estructura clara y predecible.
+
+---
+
+# Errores personalizados
+
+También se creó la función:
+
+createError()
+
+Esta función recibe el código del error definido en el diccionario.
+
+Ejemplo:
+
+throw createError("USER_NOT_FOUND");
+
+El error generado contiene:
+
+* `statusCode`
+* `code`
+* `message`
+
+Esto permite que el error viaje desde el service hasta el middleware global sin que el controller tenga que decidir cómo responder.
+
+---
+
+# Middleware global de errores
+
+Archivo:
+
+src/middlewares/errorHandler.js
+
+El middleware global recibe los errores generados durante el procesamiento de las solicitudes.
+
+Su responsabilidad es transformar esos errores en respuestas HTTP uniformes.
+
+El flujo implementado es:
+
+Request
+   ↓
+Router
+   ↓
+Controller
+   ↓
+Service
+   ↓
+Error
+   ↓
+next(error)
+   ↓
+errorHandler
+   ↓
+Respuesta HTTP
+
+Los controllers ya no responden directamente los errores utilizando:
+
+res.status(500).json(...)
+
+En su lugar, delegan el error al middleware:
+
+catch (error) {
+    next(error);
+}
+
+---
+
+# Manejo de IDs inválidos
+
+El middleware también contempla los errores generados por Mongoose cuando se recibe un ID con un formato inválido.
+
+Por ejemplo:
+
+GET /api/users/123
+
+Si MongoDB genera un `CastError`, el middleware lo transforma en un error de validación.
+
+Respuesta:
+
+{
+  "status": "error",
+  "error": "VALIDATION_ERROR",
+  "message": "ID invalido"
+}
+
+Esto evita mostrar errores internos de Mongoose directamente al cliente.
+
+---
+
+# Middleware de rutas inexistentes
+
+Archivo:
+
+src/middlewares/notFoundHandler.js
+
+Este middleware se encarga de detectar rutas que no existen.
+
+Ejemplo:
+
+GET /api/pepito
+
+La aplicación genera:
+
+createError("ROUTE_NOT_FOUND")
+
+Y la respuesta es:
+
+{
+  "status": "error",
+  "error": "ROUTE_NOT_FOUND",
+  "message": "Ruta no encontrada"
+}
+
+---
+
+# Integración en app.js
+
+Los middlewares se registran después de las rutas:
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+De esta manera:
+
+1. La solicitud intenta encontrar una ruta.
+2. Si la ruta no existe, se genera un error de tipo `ROUTE_NOT_FOUND`.
+3. Si durante la ejecución ocurre otro error, se propaga mediante `next(error)`.
+4. Finalmente, `errorHandler` genera la respuesta correspondiente.
+
+Los endpoints de mocking continúan protegidos para que solamente estén disponibles fuera del entorno de producción.
+
+if (process.env.NODE_ENV !== "production") {
+    app.use("/api/mocks", mocksRouter);
+}
+
+---
+
+# Manejo de errores en Users
+
+Los errores relacionados con usuarios ahora son detectados en el service.
+
+Por ejemplo:
+
+if (!user) {
+    throw createError("USER_NOT_FOUND");
+}
+
+También se valida el rol:
+
+if (role && !Object.values(USER_ROLES).includes(role)) {
+    throw createError("INVALID_USER_ROLE");
+}
+
+El controller no construye la respuesta de error.
+
+Simplemente propaga el error:
+
+catch (error) {
+    next(error);
+}
+
+---
+
+# Manejo de errores en Stores
+
+El service de tiendas valida diferentes situaciones.
+
+Por ejemplo:
+
+### Tienda inexistente
+
+throw createError("STORE_NOT_FOUND");
+
+### Datos obligatorios faltantes
+
+throw createError("VALIDATION_ERROR");
+
+### Owner inexistente
+
+throw createError("USER_NOT_FOUND");
+
+### Rol inválido para el owner
+
+throw createError("INVALID_USER_ROLE");
+
+Todos estos errores terminan siendo procesados por el middleware global.
+
+---
+
+# Manejo de errores en Orders
+
+El service de pedidos valida diferentes situaciones.
+
+### Pedido inexistente
+
+throw createError("ORDER_NOT_FOUND");
+
+### Usuario inexistente
+
+throw createError("USER_NOT_FOUND");
+
+### Tienda inexistente
+
+throw createError("STORE_NOT_FOUND");
+
+### Items inexistentes o vacíos
+
+throw createError("ORDER_ITEMS_REQUIRED");
+
+### Estado inválido
+
+throw createError("INVALID_ORDER_STATUS");
+
+El controller solamente propaga los errores mediante:
+
+next(error);
+
+---
+
+# Manejo de errores en Mocking
+
+El sistema de mocking creado durante el Módulo 2 también fue adaptado al nuevo sistema de errores.
+
+El archivo principal es:
+
+src/services/mocks.service.js
+
+Ahora el service valida las cantidades recibidas antes de generar información.
+
+Por ejemplo:
+
+if (
+    !Number.isInteger(users) ||
+    !Number.isInteger(stores) ||
+    !Number.isInteger(orders) ||
+    users <= 0 ||
+    stores <= 0 ||
+    orders <= 0
+) {
+    throw createError("INVALID_MOCK_QUANTITY");
+}
+
+Esto permite controlar:
+
+* Cantidades negativas.
+* Cantidad cero.
+* Valores decimales.
+* Valores que no sean números enteros.
+
+---
+
+# Validación de usuarios, tiendas y drivers
+
+Durante la generación de datos se verifica que existan usuarios con los roles necesarios.
+
+Se obtienen:
+
+STORE
+CUSTOMER
+DRIVER
+
+Si no existen usuarios suficientes para continuar, se genera un error controlado.
+
+Ejemplo:
+
+if (drivers.length === 0) {
+    throw createError("DRIVER_NOT_FOUND");
+}
+
+---
+
+# Mocking y carga de datos
+
+El endpoint:
+
+POST /api/mocks/generateData
+
+permite generar información de prueba y almacenarla en MongoDB.
+
+Ejemplo:
+
+{
+  "users": 10,
+  "stores": 5,
+  "orders": 20
+}
+
+La respuesta exitosa utilizada actualmente es:
+
+{
+  "status": "success",
+  "message": "Datos de prueba generados correctamente",
+  "payload": {
+    "users": 10,
+    "stores": 1,
+    "orders": 20,
+    "deliveries": 20
+  }
+}
+
+La cantidad real de tiendas puede ser menor que la solicitada debido a que las tiendas dependen de la cantidad de usuarios generados con rol `store`.
+
+---
+
+# Deliveries
+
+Además de usuarios, tiendas y pedidos, el sistema de mocking también genera deliveries.
+
+El proceso es:
+
+Usuarios
+   ↓
+Stores
+   ↓
+Orders
+   ↓
+Deliveries
+
+Cada delivery se encuentra asociado a un pedido generado y a un usuario con rol `driver`.
+
+La carga de datos devuelve también la cantidad de deliveries creados:
+
+{
+  "users": 10,
+  "stores": 1,
+  "orders": 20,
+  "deliveries": 20
+}
+
+---
+
+# Endpoints de Mocking
+
+Base URL:
 
 /api/mocks
 
-Los endpoints disponibles son:
+## Generar usuarios
 
-## GET /api/mocks/mockingusers
+GET /api/mocks/mockingusers
 
-Genera usuarios falsos utilizando FakerJS.
+También permite indicar una cantidad mediante query parameter:
 
-Los datos son devueltos como respuesta y no se guardan en MongoDB.
+GET /api/mocks/mockingusers?qty=10
+
+Los datos generados no se almacenan en MongoDB.
+
+---
+
+## Generar pedidos
+
+GET /api/mocks/mockingorders
+
+También permite indicar una cantidad:
+
+GET /api/mocks/mockingorders?qty=10
+
+Los pedidos generados se devuelven como información simulada y no se almacenan en MongoDB.
+
+---
+
+## Generar y guardar datos
+
+POST /api/mocks/generateData
 
 Ejemplo:
-
-GET /api/mocks/mockingusers?qty=2
-
-Respuesta:
 
 {
-  "status": "success",
-  "payload": [
-    {
-      "firstName": "Ana",
-      "lastName": "Perez",
-      "email": "ana@test.com",
-      "role": "customer"
-    }
-  ]
+  "users": 10,
+  "stores": 5,
+  "orders": 20
 }
 
-## GET /api/mocks/mockingorders
+Este endpoint genera y almacena:
 
-Genera pedidos falsos utilizando datos simulados.
+* Usuarios.
+* Stores.
+* Orders.
+* Deliveries.
 
-Los pedidos contienen:
+---
 
-Cliente.
-Comercio.
-Items.
-Dirección de entrega.
-Total.
-Estado.
-Prioridad.
+# Pruebas realizadas en Postman
 
-Los datos solamente se devuelven en la respuesta y no se almacenan en MongoDB.
+Se realizaron pruebas para comprobar tanto los casos exitosos como los errores controlados.
 
-Ejemplo:
+## Generación correcta de datos
 
-GET /api/mocks/mockingorders?qty=2
-
-Respuesta:
-
-{
-  "status": "success",
-  "payload": [
-    {
-      "customer": "ID_USUARIO",
-      "store": "ID_STORE",
-      "items": [
-        {
-          "name": "Producto ejemplo",
-          "quantity": 2,
-          "price": 1500
-        }
-      ],
-      "deliveryAddress": "Dirección ejemplo",
-      "total": 3000,
-      "status": "created",
-      "priority": "normal"
-    }
-  ]
-}
-
-## POST /api/mocks/generateData
-
-Genera datos simulados y los inserta en MongoDB.
-
-Permite crear:
-
-Usuarios.
-Comercios.
-Pedidos.
-Entregas.
-
-Ejemplo:
+Request:
 
 POST /api/mocks/generateData
 
@@ -145,311 +536,160 @@ Body:
   "orders": 20
 }
 
-Respuesta:
+Resultado:
 
 {
   "status": "success",
+  "message": "Datos de prueba generados correctamente",
   "payload": {
     "users": 10,
-    "stores": 5,
+    "stores": 1,
     "orders": 20,
     "deliveries": 20
   }
 }
 
-# Carpeta mocks
+---
 
-Se creó una carpeta específica para la generación de datos simulados.
+## Cantidad negativa
 
-Estructura:
+Request:
 
-src/mocks/
+{
+  "users": -5,
+  "stores": 5,
+  "orders": 20
+}
 
-users.mock.js
+La solicitud es rechazada por el service mediante:
 
-stores.mock.js
+createError("INVALID_MOCK_QUANTITY")
 
-orders.mock.js
+El error es procesado posteriormente por el middleware global.
 
-deliveries.mock.js
+---
 
-Esta separación permite mantener organizada la lógica de creación de información falsa.
+## Cantidad cero
 
-# users.mock.js
+Request:
 
-Este archivo es responsable de generar usuarios falsos.
+{
+  "users": 0,
+  "stores": 5,
+  "orders": 20
+}
 
-Utiliza FakerJS para crear:
+La solicitud también es rechazada debido a que las cantidades deben ser mayores que cero.
 
-Nombres.
-Apellidos.
-Correos electrónicos.
+---
 
-También utiliza bcryptjs para generar contraseñas encriptadas:
+## Ruta inexistente
 
-const password = await bcrypt.hash("coder123",10)
+Request:
 
-Los roles utilizados se obtienen desde las constantes del proyecto:
+GET /api/pepito
 
-USER_ROLES
-
-Roles disponibles:
-
-admin
-customer
-store
-driver
-
-La función:
-
-generateMockUsers(quantity)
-
-permite generar múltiples usuarios automáticamente.
-
-# stores.mock.js
-
-Este archivo genera comercios falsos.
-
-Cada comercio queda asociado a un usuario propietario.
-
-Los datos generados incluyen:
-
-Nombre.
-Dirección.
-Usuario propietario.
-Estado activo.
+La aplicación responde mediante `notFoundHandler`.
 
 Ejemplo:
 
 {
-  "name": "Store Demo",
-  "address": "Dirección ejemplo",
-  "owner": "ID_USUARIO",
-  "isActive": true
+  "status": "error",
+  "error": "ROUTE_NOT_FOUND",
+  "message": "Ruta no encontrada"
 }
 
-# orders.mock.js
+---
 
-Este archivo genera pedidos falsos.
+## ID inválido
 
-Cada pedido contiene:
+Request:
 
-customer.
-store.
-items.
-deliveryAddress.
-total.
-status.
-priority.
+GET /api/users/123
 
-Los productos son generados utilizando FakerJS.
+Mongoose genera un `CastError`.
 
-El total del pedido se calcula automáticamente recorriendo los items:
+El middleware `errorHandler` detecta este error y lo transforma en una respuesta controlada:
 
-total = cantidad * precio
+{
+  "status": "error",
+  "error": "VALIDATION_ERROR",
+  "message": "ID invalido"
+}
 
-Los estados disponibles utilizan la constante:
+---
 
-ORDER_STATUS
+# Arquitectura final
 
-Estados posibles:
-
-created
-assigned
-picked_up
-in_transit
-delivered
-cancelled
-
-La prioridad utiliza:
-
-ORDER_PRIORITY
-
-Valores posibles:
-
-low
-normal
-high
-
-# deliveries.mock.js
-
-Este archivo genera entregas asociadas a pedidos.
-
-Cada entrega contiene:
-
-Pedido asociado.
-Repartidor asignado.
-Estado.
-Fecha de entrega.
-
-La relación generada es:
-
-User (driver)
-
-        ↓
-
-Delivery
-
-        ↓
-
-Order
-
-# Service de Mocking
-
-Archivo:
-
-src/services/mocks.service.js
-
-Contiene la lógica de negocio para la generación de datos.
-
-El proceso de generación masiva realiza:
-
-Generación de usuarios.
-Inserción de usuarios en MongoDB.
-Selección de usuarios con rol store.
-Generación de comercios.
-Inserción de comercios.
-Generación de pedidos asociados.
-Inserción de pedidos.
-Generación de entregas.
-Inserción de entregas.
-Retorno de cantidades creadas.
-
-# Controller de Mocking
-
-Archivo:
-
-src/controllers/mocks.controller.js
-
-El controlador recibe las solicitudes HTTP y delega la lógica al service.
-
-Los endpoints manejados son:
-
-GET /api/mocks/mockingusers
-
-GET /api/mocks/mockingorders
-
-POST /api/mocks/generateData
-
-# Repository
-
-La persistencia se realiza mediante repositories.
-
-Se utilizaron métodos de inserción masiva:
-
-insertManyUsers()
-
-insertManyStores()
-
-insertManyOrders()
-
-insertManyDeliveries()
-
-Esto permite mantener la separación entre la lógica de negocio y el acceso a MongoDB.
-
-Relaciones entre entidades
-
-Los datos generados mantienen las relaciones del sistema:
-
-Usuario
-
- ↓
-
-Comercio
-
- ↓
-
-Pedido
-
- ↓
-
-Entrega
-
-Esto permite simular escenarios similares a los reales.
-
-## Arquitectura implementada
-
-La arquitectura utilizada mantiene la separación por capas:
+La arquitectura del proyecto mantiene la separación por capas:
 
 Routes
-
    ↓
-
 Controllers
-
    ↓
-
 Services
-
    ↓
-
-Mocks / Repositories
-
+Repositories
    ↓
-
 MongoDB
 
-El router solamente recibe las peticiones.
 
-El controller maneja la comunicación HTTP.
+El manejo de errores se integra de manera transversal:
 
-El service contiene la lógica de generación.
+Services
+   ↓
+createError()
+   ↓
+Controllers
+   ↓
+next(error)
+   ↓
+errorHandler
+   ↓
+HTTP Response
 
-Los repositories manejan la persistencia.
+Esto permite mantener separadas las responsabilidades.
 
-# Constantes utilizadas
+Los services detectan las situaciones de error relacionadas con la lógica de negocio.
 
-Para evitar valores escritos manualmente se utilizan constantes:
+Los controllers no deciden cómo responder los errores.
 
-USER_ROLES.
-ORDER_STATUS.
-ORDER_PRIORITY.
+El middleware global es responsable de transformar los errores en respuestas HTTP.
 
-Esto asegura que los datos generados sean compatibles con los modelos del sistema.
+---
 
-# Pruebas realizadas
+# Resumen de la Pre-entrega 3
 
-Los endpoints fueron probados utilizando Postman.
+Durante este módulo se incorporó un sistema profesional y centralizado de manejo de errores.
 
-# Generación de usuarios
-GET /api/mocks/mockingusers?qty=2
+Se implementó:
 
-Resultado:
+✔ Diccionario centralizado de errores.
 
-Se generan usuarios falsos correctamente sin guardarlos en MongoDB.
+✔ Errores personalizados mediante `createError()`.
 
-# Generación de pedidos
-GET /api/mocks/mockingorders?qty=2
+✔ Middleware global `errorHandler`.
 
-Resultado:
+✔ Middleware `notFoundHandler`.
 
-Se generan pedidos con:
+✔ Respuestas HTTP uniformes.
 
-Items.
-Estados válidos.
-Prioridades válidas.
-Relaciones entre entidades.
+✔ Validación de IDs inválidos de MongoDB.
 
-# Generación de datos completos
-POST /api/mocks/generateData
+✔ Validaciones dentro de los services.
 
-Resultado:
+✔ Eliminación de respuestas de error directas en los controllers.
 
-Se insertan correctamente:
+✔ Manejo centralizado de errores del módulo de mocking.
 
-Usuarios.
-Comercios.
-Pedidos.
-Entregas.
+✔ Validación de cantidades inválidas.
 
-Ejemplo:
+✔ Validación de valores negativos y cero.
 
-{
-  "users": 10,
-  "stores": 5,
-  "orders": 20,
-  "deliveries": 20
-}
-Autor
+✔ Validación de usuarios, stores y drivers necesarios para los mocks.
 
-Jessica Negri
+✔ Generación de deliveries.
+
+✔ Pruebas de casos válidos e inválidos mediante Postman.
+
+La aplicación queda preparada para continuar incorporando nuevas funcionalidades manteniendo una arquitectura organizada y un sistema de errores consistente.
