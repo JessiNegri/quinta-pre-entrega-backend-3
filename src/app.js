@@ -5,6 +5,7 @@ import usersRouter from "./routes/users.router.js";
 import storesRouter from "./routes/stores.router.js";
 import ordersRouter from "./routes/orders.router.js";
 import mocksRouter from "./routes/mocks.router.js";
+import loggerRouter from "./routes/loggers.router.js";
 
 import { notFoundHandler } from "./middlewares/notFoundHandler.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -36,6 +37,9 @@ app.use("/api/orders", ordersRouter);
 if (process.env.NODE_ENV !== "production") {
     app.use('/api/mocks', mocksRouter);
 }
+
+// Router de prueba del logger 
+app.use("/api/logger", loggerRouter);
 
 // Middleware para rutas inexistentes
 app.use(notFoundHandler);

@@ -1,695 +1,285 @@
-# Pre-entrega Módulo 3 — Manejo profesional de errores
+# ShipNow API — Pre-entrega Módulo 4
 
-## Descripción
+## Logging y monitoreo básico
 
-En esta tercera etapa del proyecto ShipNow API se incorporó un sistema profesional y centralizado para el manejo de errores.
+En esta pre-entrega se incorpora un sistema de **logging profesional** a ShipNow API utilizando **Winston**.
 
-El objetivo principal fue evitar que cada controller o ruta tenga que construir sus propias respuestas de error y centralizar esta responsabilidad en una única capa.
+El objetivo es reemplazar los mensajes de consola utilizados anteriormente por un logger centralizado, permitiendo registrar eventos importantes de la aplicación mediante distintos niveles de log.
 
-Para esto se implementaron:
-
-* Errores personalizados del dominio.
-* Diccionario centralizado de errores.
-* Funciones reutilizables para respuestas HTTP.
-* Middleware global de manejo de errores.
-* Middleware para rutas inexistentes.
-* Validaciones dentro de los services.
-* Manejo de errores en el módulo de mocking.
-* Manejo de IDs de MongoDB inválidos.
-* Respuestas de error uniformes y predecibles.
-
-La arquitectura continúa respetando la separación por capas implementada en las entregas anteriores.
+Además, se incorporó persistencia de errores en archivos y rotación automática de logs.
 
 ---
 
-# Objetivos del módulo
+## Winston
 
-Durante esta pre-entrega se buscó:
+Se utiliza **Winston** como logger centralizado.
 
-* Centralizar el manejo de errores.
-* Evitar respuestas de error dispersas en controllers y rutas.
-* Crear errores personalizados para representar situaciones del dominio.
-* Unificar el formato de las respuestas de error.
-* Detectar los errores en la capa correspondiente.
-* Delegar la respuesta final al middleware global.
-* Validar cantidades recibidas por el módulo de mocks.
-* Controlar valores negativos o inválidos.
-* Mantener la arquitectura por capas.
+La configuración se encuentra en:
 
----
+```text
+src/config/logger.js
+```
 
-# Estructura relacionada con el manejo de errores
+Se definieron los siguientes niveles:
 
-La estructura incorporada al proyecto es:
+```text
+debug
+http
+info
+warning
+error
+fatal
+```
 
-src/
-│
-├── config/
-├── constants/
-├── controllers/
-├── middlewares/
-│   ├── errorHandler.js
-│   └── notFoundHandler.js
-├── mocks/
-├── models/
-├── repositories/
-├── routes/
-├── services/
-└── utils/
-    ├── apiResponse.js
-    └── errorDictionary.js
+Cada nivel permite identificar la importancia del evento registrado.
 
 ---
 
-# Diccionario de errores
+## Configuración según el entorno
 
-Archivo:
+El comportamiento del logger cambia según la variable de entorno `NODE_ENV`.
 
-src/utils/errorDictionary.js
+### Desarrollo
 
-Se creó un diccionario centralizado que contiene los errores utilizados por la aplicación.
+En desarrollo se habilitan logs desde el nivel:
 
-Cada error define:
+```text
+debug
+```
 
-* Código.
-* Código HTTP.
-* Mensaje predeterminado.
+Esto permite visualizar información detallada durante las pruebas.
 
-Ejemplo:
+### Producción
 
-USER_NOT_FOUND: {
-    statusCode: 404,
-    message: "Usuario no encontrado"
-}
+En producción el logger comienza desde el nivel:
 
-Entre los errores definidos se encuentran:
+```text
+info
+```
 
-VALIDATION_ERROR
-USER_NOT_FOUND
-STORE_NOT_FOUND
-ORDER_NOT_FOUND
-INVALID_USER_ROLE
-INVALID_ORDER_STATUS
-ORDER_ITEMS_REQUIRED
-USER_ALREADY_EXISTS
-INVALID_MOCK_QUANTITY
-DRIVER_NOT_FOUND
-ROUTE_NOT_FOUND
-INTERNAL_SERVER_ERROR
-
-Esto evita repetir mensajes y códigos HTTP en diferentes partes de la aplicación.
+De esta manera se reducen los mensajes de debugging y se conservan los eventos más relevantes.
 
 ---
 
-# Respuestas HTTP
+## Salida por consola
 
-Archivo:
+El logger utiliza un transporte de consola para mostrar los eventos mientras la aplicación está ejecutándose.
 
-src/utils/apiResponse.js
+Por ejemplo:
 
-Se crearon funciones reutilizables para mantener una estructura uniforme en las respuestas.
+```text
+2026-08-09 13:01:03 [info] MongoDB conectado
+2026-08-09 13:01:03 [info] Servidor escuchando en el puerto 8080
+2026-08-09 13:01:08 [debug] Log de prueba nivel debug
+2026-08-09 13:01:08 [http] Log de prueba nivel http
+2026-08-09 13:01:08 [info] Log de prueba nivel info
+2026-08-09 13:01:08 [warning] Log de prueba nivel warning
+2026-08-09 13:01:08 [error] Log de prueba nivel error
+2026-08-09 13:01:08 [fatal] Log de prueba nivel fatal
+```
 
-## Respuestas exitosas
+Los mensajes incluyen:
 
-La función:
-
-successResponse()
-
-permite devolver respuestas con el siguiente formato:
-
-{
-  "status": "success",
-  "message": "Lista de usuarios",
-  "payload": []
-}
-
-## Respuestas de error
-
-La función:
-
-errorResponse()
-
-genera respuestas con la siguiente estructura:
-
-{
-  "status": "error",
-  "error": "USER_NOT_FOUND",
-  "message": "Usuario no encontrado"
-}
-
-De esta manera, todas las respuestas de error mantienen una estructura clara y predecible.
+* Fecha y hora.
+* Nivel del log.
+* Mensaje.
 
 ---
 
-# Errores personalizados
+## Persistencia de errores
 
-También se creó la función:
+Los niveles `error` y `fatal` se almacenan en archivos dentro de:
 
-createError()
+```text
+logs/
+```
 
-Esta función recibe el código del error definido en el diccionario.
+Los archivos tienen un formato similar a:
 
-Ejemplo:
+```text
+error-2026-08-09.log
+```
 
-throw createError("USER_NOT_FOUND");
+El archivo de errores contiene únicamente los niveles:
 
-El error generado contiene:
+```text
+error
+fatal
+```
 
-* `statusCode`
-* `code`
-* `message`
-
-Esto permite que el error viaje desde el service hasta el middleware global sin que el controller tenga que decidir cómo responder.
+Esto permite consultar posteriormente los errores producidos por la aplicación.
 
 ---
 
-# Middleware global de errores
+## Rotación de archivos
 
-Archivo:
+Para evitar que los archivos de logs crezcan indefinidamente se utiliza:
 
+```text
+winston-daily-rotate-file
+```
+
+La configuración actual realiza una rotación diaria y conserva los archivos durante **7 días**.
+
+De esta forma se mantiene un historial reciente sin generar archivos demasiado grandes.
+
+---
+
+## Integración con el manejo de errores
+
+El logger fue integrado al middleware global:
+
+```text
 src/middlewares/errorHandler.js
+```
 
-El middleware global recibe los errores generados durante el procesamiento de las solicitudes.
+Los errores esperados del cliente se registran como:
 
-Su responsabilidad es transformar esos errores en respuestas HTTP uniformes.
+```text
+warning
+```
 
-El flujo implementado es:
+Mientras que los errores inesperados del servidor se registran como:
 
-Request
-   ↓
-Router
-   ↓
-Controller
-   ↓
-Service
-   ↓
-Error
-   ↓
-next(error)
-   ↓
-errorHandler
-   ↓
-Respuesta HTTP
+```text
+error
+```
 
-Los controllers ya no responden directamente los errores utilizando:
-
-res.status(500).json(...)
-
-En su lugar, delegan el error al middleware:
-
-catch (error) {
-    next(error);
-}
+Las respuestas enviadas al cliente continúan utilizando el sistema centralizado de respuestas y errores implementado anteriormente.
 
 ---
 
-# Manejo de IDs inválidos
+## Eventos registrados
 
-El middleware también contempla los errores generados por Mongoose cuando se recibe un ID con un formato inválido.
+El logger fue incorporado en diferentes puntos importantes de la aplicación.
 
-Por ejemplo:
+### Servidor
 
-GET /api/users/123
+Se registra el inicio correcto del servidor:
 
-Si MongoDB genera un `CastError`, el middleware lo transforma en un error de validación.
+```text
+Servidor escuchando en el puerto 8080
+```
 
-Respuesta:
+### MongoDB
 
-{
-  "status": "error",
-  "error": "VALIDATION_ERROR",
-  "message": "ID invalido"
-}
+Se registra la conexión exitosa:
 
-Esto evita mostrar errores internos de Mongoose directamente al cliente.
+```text
+MongoDB conectado
+```
 
----
+### Rutas inexistentes
 
-# Middleware de rutas inexistentes
-
-Archivo:
-
-src/middlewares/notFoundHandler.js
-
-Este middleware se encarga de detectar rutas que no existen.
+El middleware `notFoundHandler` registra las rutas inexistentes como `warning`.
 
 Ejemplo:
 
-GET /api/pepito
+```text
+[warning] Ruta no encontrada: GET /api/ruta-inexistente
+```
 
-La aplicación genera:
+### Pedidos
 
-createError("ROUTE_NOT_FOUND")
+El servicio de pedidos registra eventos importantes como:
 
-Y la respuesta es:
+* Pedido creado correctamente.
+* Pedido actualizado.
+* Pedido eliminado.
+* Pedido no encontrado.
+* Datos inválidos.
+* Estados o prioridades inválidas.
 
-{
-  "status": "error",
-  "error": "ROUTE_NOT_FOUND",
-  "message": "Ruta no encontrada"
-}
+### Mocking
 
----
+El servicio de mocks registra:
 
-# Integración en app.js
-
-Los middlewares se registran después de las rutas:
-
-app.use(notFoundHandler);
-app.use(errorHandler);
-
-De esta manera:
-
-1. La solicitud intenta encontrar una ruta.
-2. Si la ruta no existe, se genera un error de tipo `ROUTE_NOT_FOUND`.
-3. Si durante la ejecución ocurre otro error, se propaga mediante `next(error)`.
-4. Finalmente, `errorHandler` genera la respuesta correspondiente.
-
-Los endpoints de mocking continúan protegidos para que solamente estén disponibles fuera del entorno de producción.
-
-if (process.env.NODE_ENV !== "production") {
-    app.use("/api/mocks", mocksRouter);
-}
+* Generación de datos mock.
+* Cantidades inválidas.
+* Usuarios, pedidos y datos de prueba generados correctamente.
+* Situaciones en las que no se encuentran usuarios, tiendas o repartidores necesarios.
 
 ---
 
-# Manejo de errores en Users
+## Endpoint de prueba
 
-Los errores relacionados con usuarios ahora son detectados en el service.
+Se agregó un endpoint específico para comprobar el funcionamiento del logger:
 
-Por ejemplo:
+```text
+GET /api/logger/test
+```
 
-if (!user) {
-    throw createError("USER_NOT_FOUND");
-}
+Este endpoint genera un registro para cada uno de los niveles configurados:
 
-También se valida el rol:
+```text
+debug
+http
+info
+warning
+error
+fatal
+```
 
-if (role && !Object.values(USER_ROLES).includes(role)) {
-    throw createError("INVALID_USER_ROLE");
-}
+Respuesta esperada:
 
-El controller no construye la respuesta de error.
-
-Simplemente propaga el error:
-
-catch (error) {
-    next(error);
-}
-
----
-
-# Manejo de errores en Stores
-
-El service de tiendas valida diferentes situaciones.
-
-Por ejemplo:
-
-### Tienda inexistente
-
-throw createError("STORE_NOT_FOUND");
-
-### Datos obligatorios faltantes
-
-throw createError("VALIDATION_ERROR");
-
-### Owner inexistente
-
-throw createError("USER_NOT_FOUND");
-
-### Rol inválido para el owner
-
-throw createError("INVALID_USER_ROLE");
-
-Todos estos errores terminan siendo procesados por el middleware global.
-
----
-
-# Manejo de errores en Orders
-
-El service de pedidos valida diferentes situaciones.
-
-### Pedido inexistente
-
-throw createError("ORDER_NOT_FOUND");
-
-### Usuario inexistente
-
-throw createError("USER_NOT_FOUND");
-
-### Tienda inexistente
-
-throw createError("STORE_NOT_FOUND");
-
-### Items inexistentes o vacíos
-
-throw createError("ORDER_ITEMS_REQUIRED");
-
-### Estado inválido
-
-throw createError("INVALID_ORDER_STATUS");
-
-El controller solamente propaga los errores mediante:
-
-next(error);
-
----
-
-# Manejo de errores en Mocking
-
-El sistema de mocking creado durante el Módulo 2 también fue adaptado al nuevo sistema de errores.
-
-El archivo principal es:
-
-src/services/mocks.service.js
-
-Ahora el service valida las cantidades recibidas antes de generar información.
-
-Por ejemplo:
-
-if (
-    !Number.isInteger(users) ||
-    !Number.isInteger(stores) ||
-    !Number.isInteger(orders) ||
-    users <= 0 ||
-    stores <= 0 ||
-    orders <= 0
-) {
-    throw createError("INVALID_MOCK_QUANTITY");
-}
-
-Esto permite controlar:
-
-* Cantidades negativas.
-* Cantidad cero.
-* Valores decimales.
-* Valores que no sean números enteros.
-
----
-
-# Validación de usuarios, tiendas y drivers
-
-Durante la generación de datos se verifica que existan usuarios con los roles necesarios.
-
-Se obtienen:
-
-STORE
-CUSTOMER
-DRIVER
-
-Si no existen usuarios suficientes para continuar, se genera un error controlado.
-
-Ejemplo:
-
-if (drivers.length === 0) {
-    throw createError("DRIVER_NOT_FOUND");
-}
-
----
-
-# Mocking y carga de datos
-
-El endpoint:
-
-POST /api/mocks/generateData
-
-permite generar información de prueba y almacenarla en MongoDB.
-
-Ejemplo:
-
-{
-  "users": 10,
-  "stores": 5,
-  "orders": 20
-}
-
-La respuesta exitosa utilizada actualmente es:
-
+```json
 {
   "status": "success",
-  "message": "Datos de prueba generados correctamente",
+  "message": "Logger funcionando correctamente",
   "payload": {
-    "users": 10,
-    "stores": 1,
-    "orders": 20,
-    "deliveries": 20
+    "levels": [
+      "debug",
+      "http",
+      "info",
+      "warning",
+      "error",
+      "fatal"
+    ]
   }
 }
+```
 
-La cantidad real de tiendas puede ser menor que la solicitada debido a que las tiendas dependen de la cantidad de usuarios generados con rol `store`.
+Al ejecutar el endpoint, los seis niveles pueden observarse en la consola.
 
----
-
-# Deliveries
-
-Además de usuarios, tiendas y pedidos, el sistema de mocking también genera deliveries.
-
-El proceso es:
-
-Usuarios
-   ↓
-Stores
-   ↓
-Orders
-   ↓
-Deliveries
-
-Cada delivery se encuentra asociado a un pedido generado y a un usuario con rol `driver`.
-
-La carga de datos devuelve también la cantidad de deliveries creados:
-
-{
-  "users": 10,
-  "stores": 1,
-  "orders": 20,
-  "deliveries": 20
-}
+Los niveles `error` y `fatal` también se almacenan en el archivo de errores.
 
 ---
 
-# Endpoints de Mocking
+## Logs y Git
 
-Base URL:
+Los archivos generados por el sistema de logging no deben subirse al repositorio.
 
-/api/mocks
+La carpeta:
 
-## Generar usuarios
+```text
+logs/
+```
 
-GET /api/mocks/mockingusers
+se encuentra incluida en `.gitignore`.
 
-También permite indicar una cantidad mediante query parameter:
-
-GET /api/mocks/mockingusers?qty=10
-
-Los datos generados no se almacenan en MongoDB.
+Por lo tanto, los archivos generados automáticamente por Winston quedan fuera del repositorio de GitHub.
 
 ---
 
-## Generar pedidos
+## Dependencias utilizadas
 
-GET /api/mocks/mockingorders
+Para implementar el sistema de logging se incorporaron:
 
-También permite indicar una cantidad:
-
-GET /api/mocks/mockingorders?qty=10
-
-Los pedidos generados se devuelven como información simulada y no se almacenan en MongoDB.
-
----
-
-## Generar y guardar datos
-
-POST /api/mocks/generateData
-
-Ejemplo:
-
-{
-  "users": 10,
-  "stores": 5,
-  "orders": 20
-}
-
-Este endpoint genera y almacena:
-
-* Usuarios.
-* Stores.
-* Orders.
-* Deliveries.
+```text
+winston
+winston-daily-rotate-file
+```
 
 ---
 
-# Pruebas realizadas en Postman
-
-Se realizaron pruebas para comprobar tanto los casos exitosos como los errores controlados.
-
-## Generación correcta de datos
-
-Request:
-
-POST /api/mocks/generateData
-
-Body:
-
-{
-  "users": 10,
-  "stores": 5,
-  "orders": 20
-}
-
-Resultado:
-
-{
-  "status": "success",
-  "message": "Datos de prueba generados correctamente",
-  "payload": {
-    "users": 10,
-    "stores": 1,
-    "orders": 20,
-    "deliveries": 20
-  }
-}
-
----
-
-## Cantidad negativa
-
-Request:
-
-{
-  "users": -5,
-  "stores": 5,
-  "orders": 20
-}
-
-La solicitud es rechazada por el service mediante:
-
-createError("INVALID_MOCK_QUANTITY")
-
-El error es procesado posteriormente por el middleware global.
-
----
-
-## Cantidad cero
-
-Request:
-
-{
-  "users": 0,
-  "stores": 5,
-  "orders": 20
-}
-
-La solicitud también es rechazada debido a que las cantidades deben ser mayores que cero.
-
----
-
-## Ruta inexistente
-
-Request:
-
-GET /api/pepito
-
-La aplicación responde mediante `notFoundHandler`.
-
-Ejemplo:
-
-{
-  "status": "error",
-  "error": "ROUTE_NOT_FOUND",
-  "message": "Ruta no encontrada"
-}
-
----
-
-## ID inválido
-
-Request:
-
-GET /api/users/123
-
-Mongoose genera un `CastError`.
-
-El middleware `errorHandler` detecta este error y lo transforma en una respuesta controlada:
-
-{
-  "status": "error",
-  "error": "VALIDATION_ERROR",
-  "message": "ID invalido"
-}
-
----
-
-# Arquitectura final
-
-La arquitectura del proyecto mantiene la separación por capas:
-
-Routes
-   ↓
-Controllers
-   ↓
-Services
-   ↓
-Repositories
-   ↓
-MongoDB
-
-
-El manejo de errores se integra de manera transversal:
-
-Services
-   ↓
-createError()
-   ↓
-Controllers
-   ↓
-next(error)
-   ↓
-errorHandler
-   ↓
-HTTP Response
-
-Esto permite mantener separadas las responsabilidades.
-
-Los services detectan las situaciones de error relacionadas con la lógica de negocio.
-
-Los controllers no deciden cómo responder los errores.
-
-El middleware global es responsable de transformar los errores en respuestas HTTP.
-
----
-
-# Resumen de la Pre-entrega 3
-
-Durante este módulo se incorporó un sistema profesional y centralizado de manejo de errores.
-
-Se implementó:
-
-✔ Diccionario centralizado de errores.
-
-✔ Errores personalizados mediante `createError()`.
-
-✔ Middleware global `errorHandler`.
-
-✔ Middleware `notFoundHandler`.
-
-✔ Respuestas HTTP uniformes.
-
-✔ Validación de IDs inválidos de MongoDB.
-
-✔ Validaciones dentro de los services.
-
-✔ Eliminación de respuestas de error directas en los controllers.
-
-✔ Manejo centralizado de errores del módulo de mocking.
-
-✔ Validación de cantidades inválidas.
-
-✔ Validación de valores negativos y cero.
-
-✔ Validación de usuarios, stores y drivers necesarios para los mocks.
-
-✔ Generación de deliveries.
-
-✔ Pruebas de casos válidos e inválidos mediante Postman.
-
-La aplicación queda preparada para continuar incorporando nuevas funcionalidades manteniendo una arquitectura organizada y un sistema de errores consistente.
+## Resultado
+
+Con esta implementación, ShipNow cuenta con un sistema de logging centralizado que permite:
+
+* Registrar eventos importantes.
+* Diferenciar los eventos según su nivel.
+* Mostrar información en consola.
+* Persistir errores en archivos.
+* Rotar automáticamente los archivos.
+* Integrarse con el manejo global de errores.
+* Facilitar el debugging y monitoreo básico de la API.
