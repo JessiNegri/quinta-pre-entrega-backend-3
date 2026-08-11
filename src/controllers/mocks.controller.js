@@ -10,7 +10,7 @@ export const generateMockUsers = async (req, res, next) => {
         return successResponse(res, {
             message: "Usuarios mock generados correctamente",
             payload: users
-        });     
+        });
 
     } catch (error) {
         next(error);
@@ -47,7 +47,3 @@ export const generateData = async (req, res, next) => {
         next(error);
     }
 };
-
-
-
-

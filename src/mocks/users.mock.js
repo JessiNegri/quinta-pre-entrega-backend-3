@@ -1,8 +1,8 @@
-import mongoose from 'mongoose';
-import { faker} from '@faker-js/faker';
-import bcrypt from 'bcryptjs';
+import mongoose from "mongoose";
+import { faker } from "@faker-js/faker";
+import bcrypt from "bcryptjs";
 
-import { USER_ROLES } from '../constants/userroles.js';
+import { USER_ROLES } from "../constants/userroles.js";
 
 const availableRoles = [
     USER_ROLES.CUSTOMER,
@@ -25,10 +25,10 @@ export const generateMockUser = async () => {
 };
 
 export const generateMockUsers = async (quantity = 10) => {
-    return Promise.all(Array.from({ length: quantity }, () => generateMockUser()));
+    return Promise.all(
+        Array.from(
+            { length: quantity },
+            () => generateMockUser()
+        )
+    );
 };
-
-
-
-
-

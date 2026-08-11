@@ -5,10 +5,14 @@ export function successResponse(res, { statusCode = 200, message, payload }) {
         status: "success",
         message,
         payload
-    })
+    });
 }
 
-export function errorResponse(res, { statusCode = 500, error, message = "Internal server error" }) {
+export function errorResponse(res, {
+    statusCode = 500,
+    error,
+    message = "Internal server error"
+}) {
     return res.status(statusCode).json({
         status: "error",
         error,
@@ -16,12 +20,19 @@ export function errorResponse(res, { statusCode = 500, error, message = "Interna
     });
 }
 
-export function createError(code, customMessage = null){
-    const errorDefinition = ERROR_DICTIONARY[code] || ERROR_DICTIONARY.INTERNAL_SERVER_ERROR;
-    
-    const error = new Error(customMessage || errorDefinition.message);
+export function createError(code, customMessage = null) {
+    const errorDefinition =
+        ERROR_DICTIONARY[code] ||
+        ERROR_DICTIONARY.INTERNAL_SERVER_ERROR;
+
+    const error = new Error(
+        customMessage || errorDefinition.message
+    );
+
     error.statusCode = errorDefinition.statusCode;
-    error.code = ERROR_DICTIONARY[code] ? code : "INTERNAL_SERVER_ERROR";
+    error.code = ERROR_DICTIONARY[code]
+        ? code
+        : "INTERNAL_SERVER_ERROR";
 
     return error;
 }

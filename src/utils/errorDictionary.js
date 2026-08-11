@@ -28,7 +28,7 @@ export const ERROR_DICTIONARY = {
         statusCode: 400,
         message: "Estado de orden invalido"
     },
-    
+
     INVALID_ORDER_PRIORITY: {
         statusCode: 400,
         message: "Prioridad de pedido inválida"
@@ -59,18 +59,13 @@ export const ERROR_DICTIONARY = {
         message: "La cantidad de datos mock debe ser un número entero mayor que cero."
     },
 
-    INVALID_PRIORITY: {
-        statusCode: 400,
-        message: "Prioridad de pedido inválida"
-    },
-
     DELIVERY_NOT_FOUND: {
         statusCode: 404,
         message: "Entrega no encontrada"
     },
 
     MOCK_DATA_GENERATION_ERROR: {
-    statusCode: 500,
-    message: "Error al generar los datos de prueba."
-},
+        statusCode: 500,
+        message: "Error al generar los datos de prueba."
+    }
 };

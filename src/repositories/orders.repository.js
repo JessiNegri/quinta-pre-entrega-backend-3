@@ -5,11 +5,15 @@ import DeliveryModel from "../models/delivery.model.js";
 
 export const ordersRepository = {
     findAll: async () => {
-        return OrderModel.find().populate("customer").populate("store");
+        return OrderModel.find()
+            .populate("customer")
+            .populate("store");
     },
 
     findById: async (id) => {
-        return OrderModel.findById(id).populate("customer").populate("store");
+        return OrderModel.findById(id)
+            .populate("customer")
+            .populate("store");
     },
 
     create: async (orderData) => {
@@ -49,7 +53,6 @@ export const ordersRepository = {
     },
 
     insertManyDeliveries: async (deliveries) => {
-    return DeliveryModel.insertMany(deliveries);
-}
-
+        return DeliveryModel.insertMany(deliveries);
+    }
 };

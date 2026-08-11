@@ -1,9 +1,13 @@
 import express from "express";
 import cors from "cors";
 
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.js";
+
 import usersRouter from "./routes/users.router.js";
 import storesRouter from "./routes/stores.router.js";
 import ordersRouter from "./routes/orders.router.js";
+import deliveriesRouter from "./routes/deliveries.router.js";
 import mocksRouter from "./routes/mocks.router.js";
 import loggerRouter from "./routes/loggers.router.js";
 
@@ -14,6 +18,8 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/", (req, res) => {
     res.json({
@@ -32,6 +38,7 @@ app.get("/health", (req, res) => {
 app.use("/api/users", usersRouter);
 app.use("/api/stores", storesRouter);
 app.use("/api/orders", ordersRouter);
+app.use("/api/deliveries", deliveriesRouter);
 
 //Protección de mocks en router para no quedar expuesto en producción
 if (process.env.NODE_ENV !== "production") {
@@ -48,4 +55,5 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 export default app;
+
 

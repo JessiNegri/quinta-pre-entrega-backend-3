@@ -1,23 +1,23 @@
 import { Router } from "express";
-import { getOrders, getOrderById, createOrder, updateOrderStatus, deleteOrder } from "../controllers/orders.controller.js";
+import { getDeliveries, getDeliveryById, createDelivery, updateDeliveryStatus, deleteDelivery } from "../controllers/deliveries.controller.js";
 
 const router = Router();
 
 /**
  * @swagger
- * /api/orders:
+ * /api/deliveries:
  *   get:
  *     tags:
- *       - Orders
- *     summary: Obtener todos los pedidos
- *     description: Devuelve la lista de pedidos registrados.
+ *       - Deliveries
+ *     summary: Obtener todas las entregas
+ *     description: Devuelve la lista de entregas registradas.
  *     responses:
  *       200:
- *         description: Lista de pedidos obtenida correctamente
+ *         description: Lista de entregas obtenida correctamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/OrdersResponse'
+ *               $ref: '#/components/schemas/DeliveriesResponse'
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -25,30 +25,30 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/", getOrders);
+router.get("/", getDeliveries);
 
 /**
  * @swagger
- * /api/orders/{oid}:
+ * /api/deliveries/{did}:
  *   get:
  *     tags:
- *       - Orders
- *     summary: Obtener un pedido por ID
- *     description: Devuelve un pedido específico mediante su identificador.
+ *       - Deliveries
+ *     summary: Obtener una entrega por ID
+ *     description: Devuelve una entrega específica junto con la información del pedido y repartidor asociados.
  *     parameters:
  *       - in: path
- *         name: oid
+ *         name: did
  *         required: true
- *         description: ID del pedido
+ *         description: ID de la entrega
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: Pedido obtenido correctamente
+ *         description: Entrega obtenida correctamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/OrderResponse'
+ *               $ref: '#/components/schemas/DeliveryResponse'
  *       400:
  *         description: ID inválido
  *         content:
@@ -56,7 +56,7 @@ router.get("/", getOrders);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Pedido no encontrado
+ *         description: Entrega no encontrada
  *         content:
  *           application/json:
  *             schema:
@@ -68,29 +68,29 @@ router.get("/", getOrders);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/:oid", getOrderById);
+router.get("/:did", getDeliveryById);
 
 /**
  * @swagger
- * /api/orders:
+ * /api/deliveries:
  *   post:
  *     tags:
- *       - Orders
- *     summary: Crear un pedido
- *     description: Crea un nuevo pedido en el sistema.
+ *       - Deliveries
+ *     summary: Crear una entrega
+ *     description: Crea una nueva entrega asociada a un pedido y un repartidor.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/OrderInput'
+ *             $ref: '#/components/schemas/DeliveryInput'
  *     responses:
  *       201:
- *         description: Pedido creado correctamente
+ *         description: Entrega creada correctamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/OrderResponse'
+ *               $ref: '#/components/schemas/DeliveryResponse'
  *       400:
  *         description: Datos inválidos
  *         content:
@@ -98,7 +98,7 @@ router.get("/:oid", getOrderById);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Cliente o tienda no encontrados
+ *         description: Pedido o repartidor no encontrados
  *         content:
  *           application/json:
  *             schema:
@@ -110,21 +110,21 @@ router.get("/:oid", getOrderById);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/", createOrder);
+router.post("/", createDelivery);
 
 /**
  * @swagger
- * /api/orders/{oid}/status:
- *   put:
+ * /api/deliveries/{did}/status:
+ *   patch:
  *     tags:
- *       - Orders
- *     summary: Actualizar el estado de un pedido
- *     description: Actualiza el estado de un pedido existente.
+ *       - Deliveries
+ *     summary: Actualizar el estado de una entrega
+ *     description: Actualiza el estado de una entrega existente.
  *     parameters:
  *       - in: path
- *         name: oid
+ *         name: did
  *         required: true
- *         description: ID del pedido
+ *         description: ID de la entrega
  *         schema:
  *           type: string
  *     requestBody:
@@ -132,14 +132,14 @@ router.post("/", createOrder);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/OrderStatusInput'
+ *             $ref: '#/components/schemas/DeliveryStatusInput'
  *     responses:
  *       200:
- *         description: Estado del pedido actualizado correctamente
+ *         description: Estado de la entrega actualizado correctamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/OrderResponse'
+ *               $ref: '#/components/schemas/DeliveryResponse'
  *       400:
  *         description: Estado o ID inválido
  *         content:
@@ -147,7 +147,7 @@ router.post("/", createOrder);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Pedido no encontrado
+ *         description: Entrega no encontrada
  *         content:
  *           application/json:
  *             schema:
@@ -159,30 +159,30 @@ router.post("/", createOrder);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put("/:oid/status", updateOrderStatus);
+router.patch("/:did/status", updateDeliveryStatus);
 
 /**
  * @swagger
- * /api/orders/{oid}:
+ * /api/deliveries/{did}:
  *   delete:
  *     tags:
- *       - Orders
- *     summary: Eliminar un pedido
- *     description: Elimina un pedido existente.
+ *       - Deliveries
+ *     summary: Eliminar una entrega
+ *     description: Elimina una entrega existente.
  *     parameters:
  *       - in: path
- *         name: oid
+ *         name: did
  *         required: true
- *         description: ID del pedido
+ *         description: ID de la entrega
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: Pedido eliminado correctamente
+ *         description: Entrega eliminada correctamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/OrderResponse'
+ *               $ref: '#/components/schemas/DeliveryResponse'
  *       400:
  *         description: ID inválido
  *         content:
@@ -190,7 +190,7 @@ router.put("/:oid/status", updateOrderStatus);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Pedido no encontrado
+ *         description: Entrega no encontrada
  *         content:
  *           application/json:
  *             schema:
@@ -202,6 +202,6 @@ router.put("/:oid/status", updateOrderStatus);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete("/:oid", deleteOrder);
+router.delete("/:did", deleteDelivery);
 
 export default router;

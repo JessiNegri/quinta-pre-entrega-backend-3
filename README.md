@@ -1,285 +1,342 @@
-# ShipNow API — Pre-entrega Módulo 4
+# Pre-entrega Módulo 5: Documentación profesional de API con Swagger
 
-## Logging y monitoreo básico
+## ShipNow API
 
-En esta pre-entrega se incorpora un sistema de **logging profesional** a ShipNow API utilizando **Winston**.
+API REST desarrollada con Node.js, Express y MongoDB para la gestión de usuarios, tiendas, pedidos y entregas.
 
-El objetivo es reemplazar los mensajes de consola utilizados anteriormente por un logger centralizado, permitiendo registrar eventos importantes de la aplicación mediante distintos niveles de log.
-
-Además, se incorporó persistencia de errores en archivos y rotación automática de logs.
+En esta pre-entrega se incorpora documentación interactiva de la API utilizando Swagger/OpenAPI, permitiendo consultar y probar los endpoints directamente desde el navegador.
 
 ---
 
-## Winston
+## Tecnologías utilizadas
 
-Se utiliza **Winston** como logger centralizado.
-
-La configuración se encuentra en:
-
-```text
-src/config/logger.js
-```
-
-Se definieron los siguientes niveles:
-
-```text
-debug
-http
-info
-warning
-error
-fatal
-```
-
-Cada nivel permite identificar la importancia del evento registrado.
+* Node.js
+* Express
+* MongoDB
+* Mongoose
+* Swagger / OpenAPI
+* Swagger UI
+* Faker.js
+* bcryptjs
+* Winston
+* dotenv
 
 ---
 
-## Configuración según el entorno
+## Documentación con Swagger
 
-El comportamiento del logger cambia según la variable de entorno `NODE_ENV`.
+La documentación interactiva de la API está disponible en:
 
-### Desarrollo
+`http://localhost:8080/api/docs`
 
-En desarrollo se habilitan logs desde el nivel:
+Desde Swagger UI se pueden consultar y probar los endpoints de los diferentes módulos de la aplicación.
 
-```text
-debug
-```
-
-Esto permite visualizar información detallada durante las pruebas.
-
-### Producción
-
-En producción el logger comienza desde el nivel:
-
-```text
-info
-```
-
-De esta manera se reducen los mensajes de debugging y se conservan los eventos más relevantes.
+La configuración de Swagger se encuentra separada de la lógica de las rutas.
 
 ---
 
-## Salida por consola
+## Módulos documentados
 
-El logger utiliza un transporte de consola para mostrar los eventos mientras la aplicación está ejecutándose.
+La documentación está organizada mediante los siguientes tags:
 
-Por ejemplo:
+* Users
+* Orders
+* Deliveries
+* Mocks
+* Logger
 
-```text
-2026-08-09 13:01:03 [info] MongoDB conectado
-2026-08-09 13:01:03 [info] Servidor escuchando en el puerto 8080
-2026-08-09 13:01:08 [debug] Log de prueba nivel debug
-2026-08-09 13:01:08 [http] Log de prueba nivel http
-2026-08-09 13:01:08 [info] Log de prueba nivel info
-2026-08-09 13:01:08 [warning] Log de prueba nivel warning
-2026-08-09 13:01:08 [error] Log de prueba nivel error
-2026-08-09 13:01:08 [fatal] Log de prueba nivel fatal
-```
+Cada endpoint documentado incluye, según corresponda:
 
-Los mensajes incluyen:
-
-* Fecha y hora.
-* Nivel del log.
-* Mensaje.
+* Método HTTP
+* Ruta
+* Descripción
+* Parámetros
+* Request Body
+* Respuesta exitosa
+* Posibles errores
 
 ---
 
-## Persistencia de errores
+## Endpoints principales
 
-Los niveles `error` y `fatal` se almacenan en archivos dentro de:
+### Users
 
-```text
-logs/
-```
+Permite gestionar los usuarios de ShipNow.
 
-Los archivos tienen un formato similar a:
+* `GET /api/users`
+* `GET /api/users/{uid}`
+* `POST /api/users`
+* `PUT /api/users/{uid}`
+* `DELETE /api/users/{uid}`
 
-```text
-error-2026-08-09.log
-```
+### Stores
 
-El archivo de errores contiene únicamente los niveles:
+Permite gestionar las tiendas asociadas a los usuarios.
 
-```text
-error
-fatal
-```
+* `GET /api/stores`
+* `GET /api/stores/{sid}`
+* `POST /api/stores`
+* `PUT /api/stores/{sid}`
+* `DELETE /api/stores/{sid}`
 
-Esto permite consultar posteriormente los errores producidos por la aplicación.
+### Orders
 
----
+Permite gestionar los pedidos.
 
-## Rotación de archivos
+* `GET /api/orders`
+* `GET /api/orders/{oid}`
+* `POST /api/orders`
+* `PATCH /api/orders/{oid}/status`
+* `DELETE /api/orders/{oid}`
 
-Para evitar que los archivos de logs crezcan indefinidamente se utiliza:
+### Deliveries
 
-```text
-winston-daily-rotate-file
-```
+Permite gestionar las entregas y su estado.
 
-La configuración actual realiza una rotación diaria y conserva los archivos durante **7 días**.
+* `GET /api/deliveries`
+* `GET /api/deliveries/{did}`
+* `POST /api/deliveries`
+* `PATCH /api/deliveries/{did}/status`
+* `DELETE /api/deliveries/{did}`
 
-De esta forma se mantiene un historial reciente sin generar archivos demasiado grandes.
+### Mocks
 
----
+Permite generar datos simulados para realizar pruebas sin necesidad de cargarlos manualmente.
 
-## Integración con el manejo de errores
+* `GET /api/mocks/users`
+* `GET /api/mocks/orders`
+* `POST /api/mocks/seed`
 
-El logger fue integrado al middleware global:
+El endpoint `/api/mocks/seed` permite generar e insertar datos de prueba en MongoDB.
 
-```text
-src/middlewares/errorHandler.js
-```
+Ejemplo de body:
 
-Los errores esperados del cliente se registran como:
+{
+  "users": 10,
+  "stores": 5,
+  "orders": 20
+}
 
-```text
-warning
-```
-
-Mientras que los errores inesperados del servidor se registran como:
-
-```text
-error
-```
-
-Las respuestas enviadas al cliente continúan utilizando el sistema centralizado de respuestas y errores implementado anteriormente.
-
----
-
-## Eventos registrados
-
-El logger fue incorporado en diferentes puntos importantes de la aplicación.
-
-### Servidor
-
-Se registra el inicio correcto del servidor:
-
-```text
-Servidor escuchando en el puerto 8080
-```
-
-### MongoDB
-
-Se registra la conexión exitosa:
-
-```text
-MongoDB conectado
-```
-
-### Rutas inexistentes
-
-El middleware `notFoundHandler` registra las rutas inexistentes como `warning`.
+La respuesta informa la cantidad de usuarios, tiendas, pedidos y entregas generadas.
 
 Ejemplo:
 
-```text
-[warning] Ruta no encontrada: GET /api/ruta-inexistente
-```
-
-### Pedidos
-
-El servicio de pedidos registra eventos importantes como:
-
-* Pedido creado correctamente.
-* Pedido actualizado.
-* Pedido eliminado.
-* Pedido no encontrado.
-* Datos inválidos.
-* Estados o prioridades inválidas.
-
-### Mocking
-
-El servicio de mocks registra:
-
-* Generación de datos mock.
-* Cantidades inválidas.
-* Usuarios, pedidos y datos de prueba generados correctamente.
-* Situaciones en las que no se encuentran usuarios, tiendas o repartidores necesarios.
-
----
-
-## Endpoint de prueba
-
-Se agregó un endpoint específico para comprobar el funcionamiento del logger:
-
-```text
-GET /api/logger/test
-```
-
-Este endpoint genera un registro para cada uno de los niveles configurados:
-
-```text
-debug
-http
-info
-warning
-error
-fatal
-```
-
-Respuesta esperada:
-
-```json
 {
   "status": "success",
-  "message": "Logger funcionando correctamente",
+  "message": "Datos de prueba generados correctamente",
   "payload": {
-    "levels": [
-      "debug",
-      "http",
-      "info",
-      "warning",
-      "error",
-      "fatal"
-    ]
+    "users": 10,
+    "stores": 4,
+    "orders": 20,
+    "deliveries": 20
   }
 }
-```
 
-Al ejecutar el endpoint, los seis niveles pueden observarse en la consola.
+Los endpoints de mocks también contemplan cantidades inválidas.
 
-Los niveles `error` y `fatal` también se almacenan en el archivo de errores.
+Ejemplo:
 
----
-
-## Logs y Git
-
-Los archivos generados por el sistema de logging no deben subirse al repositorio.
-
-La carpeta:
-
-```text
-logs/
-```
-
-se encuentra incluida en `.gitignore`.
-
-Por lo tanto, los archivos generados automáticamente por Winston quedan fuera del repositorio de GitHub.
+`GET /api/mocks/users?qty=2`
 
 ---
 
-## Dependencias utilizadas
+## Logger
 
-Para implementar el sistema de logging se incorporaron:
+Se dispone de un endpoint destinado a comprobar el funcionamiento del sistema de logging:
 
-```text
-winston
-winston-daily-rotate-file
-```
+`GET /api/logger`
+
+Este endpoint es una herramienta de validación técnica y no representa una funcionalidad de negocio.
+
+Permite verificar diferentes niveles de logging, incluyendo:
+
+* debug
+* http
+* info
+* warning
+* error
+* fatal
 
 ---
 
-## Resultado
+## Schemas reutilizables
 
-Con esta implementación, ShipNow cuenta con un sistema de logging centralizado que permite:
+La documentación de Swagger utiliza schemas reutilizables para representar las principales estructuras de la API.
 
-* Registrar eventos importantes.
-* Diferenciar los eventos según su nivel.
-* Mostrar información en consola.
-* Persistir errores en archivos.
-* Rotar automáticamente los archivos.
-* Integrarse con el manejo global de errores.
-* Facilitar el debugging y monitoreo básico de la API.
+Entre ellos se encuentran:
+
+* User
+* Store
+* Order
+* Delivery
+* OrderItem
+* ErrorResponse
+* SuccessResponse
+
+Estos schemas permiten mantener una documentación consistente y evitar la repetición innecesaria de estructuras.
+
+---
+
+## Manejo de errores
+
+La API utiliza un sistema centralizado de manejo de errores mediante un diccionario de errores.
+
+Entre los errores contemplados se encuentran:
+
+* Datos inválidos o incompletos
+* Usuario no encontrado
+* Tienda no encontrada
+* Pedido no encontrado
+* Entrega no encontrada
+* Rol de usuario inválido
+* Estado de pedido inválido
+* Prioridad de pedido inválida
+* Items de pedido requeridos
+* Cantidad inválida para mocks
+* Error interno del servidor
+* Ruta no encontrada
+
+Las respuestas de error utilizan una estructura uniforme.
+
+Ejemplo:
+
+{
+  "status": "error",
+  "error": "USER_NOT_FOUND",
+  "message": "Usuario no encontrado"
+}
+
+---
+
+## Estructura de respuesta
+
+Las respuestas exitosas utilizan una estructura uniforme:
+
+{
+  "status": "success",
+  "message": "Mensaje descriptivo",
+  "payload": {}
+}
+
+Las respuestas de error utilizan:
+
+{
+  "status": "error",
+  "error": "ERROR_CODE",
+  "message": "Descripción del error"
+}
+
+---
+
+## Requisitos
+
+Para ejecutar el proyecto se necesita tener instalado:
+
+* Node.js
+* MongoDB o una conexión a MongoDB Atlas
+* npm
+
+---
+
+## Instalación
+
+Clonar el repositorio:
+
+git clone URL_DEL_REPOSITORIO
+
+
+Ingresar al proyecto:
+
+cd shipnow-api
+
+Instalar las dependencias:
+
+npm install
+
+Crear un archivo `.env` a partir del archivo `.env.example` y configurar las variables necesarias.
+
+Ejemplo:
+
+env
+PORT=8080
+MONGODB_URI=tu_conexion_a_mongodb
+NODE_ENV=development
+
+---
+
+## Ejecución
+
+Para iniciar el servidor:
+
+npm run dev
+
+Una vez iniciado el servidor, se puede acceder a Swagger desde:
+
+`http://localhost:8080/api/docs`
+
+---
+
+## Pruebas
+
+Los endpoints pueden probarse directamente desde Swagger UI.
+
+También se pueden utilizar herramientas como Postman para realizar las pruebas de la API.
+
+Durante la validación de esta pre-entrega se comprobaron los principales endpoints de:
+
+* Users
+* Stores
+* Orders
+* Deliveries
+* Mocks
+* Logger
+
+Las respuestas obtenidas fueron verificadas contra el comportamiento real de la API.
+
+---
+
+## Arquitectura
+
+El proyecto utiliza una arquitectura por capas para separar responsabilidades:
+
+src/
+├── config/
+├── constants/
+├── controllers/
+├── middlewares/
+├── mocks/
+├── models/
+├── repositories/
+├── routes/
+├── services/
+└── utils/
+
+La comunicación principal sigue el flujo:
+
+Router
+   ↓
+Controller
+   ↓
+Service
+   ↓
+Repository
+   ↓
+Model
+   ↓
+MongoDB
+
+La configuración de Swagger se mantiene separada de la lógica de las rutas.
+
+---
+
+## Variables de entorno
+
+El archivo `.env` no debe subirse al repositorio.
+
+El proyecto incluye un archivo `.env.example` como referencia para configurar las variables necesarias.
+
+---
+
+## Autor
+
+Jessica Negri
