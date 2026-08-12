@@ -66,7 +66,7 @@ export const mocksService = {
             !Number.isInteger(users) ||
             !Number.isInteger(stores) ||
             !Number.isInteger(orders) ||
-            users <= 0 ||
+            users < 3 ||
             stores <= 0 ||
             orders <= 0
         ) {
@@ -82,9 +82,13 @@ export const mocksService = {
         );
 
         const mockUsers = await generateMockUsers(users);
+        if (mockUsers.length >= 3) {
+            mockUsers[0].role = USER_ROLES.CUSTOMER;
+            mockUsers[1].role = USER_ROLES.STORE;
+            mockUsers[2].role = USER_ROLES.DRIVER;
+        }
 
-        const createdUsers =
-            await ordersRepository.insertManyUsers(mockUsers);
+        const createdUsers = await ordersRepository.insertManyUsers(mockUsers);
 
         const owners = createdUsers.filter(user => user.role === USER_ROLES.STORE);
 

@@ -9,6 +9,11 @@ export const ERROR_DICTIONARY = {
         message: "Usuario no encontrado"
     },
 
+    DRIVER_NOT_FOUND: {
+        statusCode: 404,
+        message: "Repartidor no encontrado"
+    },
+
     STORE_NOT_FOUND: {
         statusCode: 404,
         message: "Tienda no encontrada"

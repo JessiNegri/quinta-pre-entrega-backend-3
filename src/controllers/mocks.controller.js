@@ -3,7 +3,7 @@ import { successResponse } from "../utils/apiResponse.js";
 
 export const generateMockUsers = async (req, res, next) => {
     try {
-        const qty = Number(req.query.qty) || 10;
+        const qty = req.query.qty !== undefined? Number(req.query.qty): 10;
 
         const users = await mocksService.getMockUsers(qty);
 
@@ -19,7 +19,7 @@ export const generateMockUsers = async (req, res, next) => {
 
 export const generateMockOrders = async (req, res, next) => {
     try {
-        const qty = Number(req.query.qty) || 10;
+        const qty = req.query.qty !== undefined? Number(req.query.qty): 10;
 
         const orders = await mocksService.getMockOrders(qty);
 
