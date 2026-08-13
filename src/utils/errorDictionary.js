@@ -1,7 +1,7 @@
 export const ERROR_DICTIONARY = {
     VALIDATION_ERROR: {
         statusCode: 400,
-        message: "Datos invalidos o incompletos"
+        message: "Datos inválidos o incompletos"
     },
 
     USER_NOT_FOUND: {
@@ -26,12 +26,12 @@ export const ERROR_DICTIONARY = {
 
     INVALID_USER_ROLE: {
         statusCode: 400,
-        message: "Rol invalido"
+        message: "Rol inválido"
     },
 
     INVALID_ORDER_STATUS: {
         statusCode: 400,
-        message: "Estado de orden invalido"
+        message: "Estado de orden inválido"
     },
 
     INVALID_ORDER_PRIORITY: {
@@ -61,7 +61,7 @@ export const ERROR_DICTIONARY = {
 
     INVALID_MOCK_QUANTITY: {
         statusCode: 400,
-        message: "La cantidad de datos mock debe ser un número entero mayor que cero."
+        message: "La cantidad de datos mock debe ser un número entero mayor que cero"
     },
 
     DELIVERY_NOT_FOUND: {
@@ -71,6 +71,36 @@ export const ERROR_DICTIONARY = {
 
     MOCK_DATA_GENERATION_ERROR: {
         statusCode: 500,
-        message: "Error al generar los datos de prueba."
-    }
+        message: "Error al generar los datos de prueba"
+    },
+
+    FILE_REQUIRED: {
+        statusCode: 400,
+        message: "Debe adjuntar un archivo"
+    },
+
+    INVALID_DOCUMENT_TYPE: {
+        statusCode: 400,
+        message: "Tipo de documento inválido"
+    },
+
+    INVALID_FILE_TYPE: {
+        statusCode: 400,
+        message: "Tipo de archivo no permitido"
+    },
+
+    FILE_TOO_LARGE: {
+        statusCode: 400,
+        message: "El archivo supera el tamaño máximo permitido"
+    },
+
+    INVALID_FILE_FIELD: {
+        statusCode: 400,
+        message: "El campo del archivo no es válido"
+    },
+
+    FILE_UPLOAD_ERROR: {
+        statusCode: 500,
+        message: "Error al guardar el archivo"
+    },
 };

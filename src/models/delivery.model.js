@@ -24,6 +24,37 @@ const deliverySchema = new mongoose.Schema(
         deliveredAt: {
             type: Date,
             default: null
+        },
+
+        proof: {
+            originalName: {
+                type: String
+            },
+
+            fileName: {
+                type: String
+            },
+
+            path: {
+                type: String
+            },
+
+            mimetype: {
+                type: String
+            },
+
+            size: {
+                type: Number
+            },
+
+            documentType: {
+                type: String,
+                default: "delivery-proof"
+            },
+
+            uploadedAt: {
+                type: Date
+            }
         }
     },
     {
@@ -31,7 +62,6 @@ const deliverySchema = new mongoose.Schema(
         versionKey: false
     }
 );
-
 
 const DeliveryModel = mongoose.model("Delivery", deliverySchema);
 

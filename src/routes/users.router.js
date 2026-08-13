@@ -1,5 +1,7 @@
 import { Router } from "express";
-import { getUsers, getUserById, createUser, updateUser, deleteUser } from "../controllers/users.controller.js";
+import { getUsers, getUserById, createUser, updateUser, deleteUser, uploadUserDocument, uploadUserLicense } from "../controllers/users.controller.js";
+
+import upload from "../middlewares/upload.middleware.js";
 
 const router = Router();
 
@@ -200,5 +202,143 @@ router.put("/:uid", updateUser);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete("/:uid", deleteUser);
+
+/**
+ * @swagger
+ * /api/users/{uid}/documents:
+ *   post:
+ *     tags:
+ *       - Users
+ *     summary: Subir documento de usuario
+ *     description: Sube un documento PDF y lo asocia a un usuario existente.
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         description: ID del usuario
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - document
+ *               - type
+ *             properties:
+ *               document:
+ *                 type: string
+ *                 format: binary
+ *                 description: Archivo PDF del documento
+ *               type:
+ *                 type: string
+ *                 description: Tipo de documento
+ *                 enum:
+ *                   - user_document
+ *     responses:
+ *       200:
+ *         description: Documento agregado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponse'
+ *       400:
+ *         description: Archivo requerido, tipo de archivo inválido, campo inválido o tipo de documento inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Usuario no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       413:
+ *         description: El archivo supera el tamaño máximo permitido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+    "/:uid/documents",
+    upload.single("document"),
+    uploadUserDocument
+);
+
+/**
+ * @swagger
+ * /api/users/{uid}/licenses:
+ *   post:
+ *     tags:
+ *       - Users
+ *     summary: Subir licencia de usuario
+ *     description: Sube una licencia en formato PDF y la asocia a un usuario existente.
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         description: ID del usuario
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - license
+ *             properties:
+ *               license:
+ *                 type: string
+ *                 format: binary
+ *                 description: Licencia del usuario en formato PDF
+ *     responses:
+ *       200:
+ *         description: Licencia agregada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponse'
+ *       400:
+ *         description: Archivo requerido, tipo de archivo inválido o campo inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Usuario no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       413:
+ *         description: El archivo supera el tamaño máximo permitido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+    "/:uid/licenses",
+    upload.single("license"),
+    uploadUserLicense
+);
 
 export default router;

@@ -1,319 +1,325 @@
-# Pre-entrega Módulo 6 — Testing funcional con Mocha, Chai y Supertest
+# Pre-entrega Módulo 7 — Carga de archivos, documentos y comprobantes
 
-En esta pre-entrega se incorporó una suite de **tests funcionales automatizados** para validar los endpoints principales de la API ShipNow.
+## ShipNow API
 
-Los tests comprueban tanto casos exitosos como errores esperados, verificando los códigos HTTP, la estructura de las respuestas y las propiedades principales del `body`.
+En esta pre-entrega se incorporó a ShipNow la carga y gestión de archivos utilizando **Multer**.
+
+La API permite subir documentos de usuarios, licencias y comprobantes de entrega mediante `multipart/form-data`, almacenarlos en carpetas organizadas del servidor y registrar únicamente sus metadatos en MongoDB.
+
+La implementación se integra con el sistema existente de errores, logging, Swagger y testing funcional.
+
+---
 
 ## Tecnologías utilizadas
 
-Para la implementación de los tests se utilizaron:
+- Node.js
+- Express
+- MongoDB
+- Mongoose
+- Multer
+- Winston
+- Swagger
+- Mocha
+- Chai
+- Supertest
 
-* **Mocha:** organización y ejecución de la suite de tests.
-* **Chai:** assertions y validación de resultados.
-* **Supertest:** realización de peticiones HTTP directamente sobre la aplicación Express.
-* **Cross-env:** configuración de `NODE_ENV=test` al ejecutar la suite.
-* **MongoDB / Mongoose:** base de datos independiente para el entorno de testing.
+---
 
-## Instalación
+## Configuración de Multer
 
-Instalar las dependencias del proyecto:
+La configuración de Multer se encuentra centralizada en:
 
-npm install
+src/middlewares/upload.middleware.js
 
-Las herramientas utilizadas para testing se encuentran configuradas como dependencias de desarrollo del proyecto.
+Esta configuración se encarga de:
 
-## Ejecución de los tests
+- determinar la carpeta de destino;
+- generar nombres únicos para los archivos;
+- validar el tipo de archivo;
+- limitar el tamaño máximo;
+- validar el campo utilizado para subir el archivo.
 
-Para ejecutar toda la suite:
+Los nombres de los archivos se generan utilizando UUID para evitar colisiones.
 
-npm test
+Actualmente se aceptan archivos:
 
-El script configurado en `package.json` es:
+application/pdf
 
-"test": "cross-env NODE_ENV=test mocha --file test/test.setup.js test/**/*.test.js"
+El tamaño máximo permitido es:
 
-Esto permite ejecutar Mocha utilizando automáticamente el entorno de testing.
+5 MB
 
-## Entorno de testing
+---
 
-El proyecto utiliza un entorno separado del entorno de desarrollo.
+## Estructura de archivos
 
-El archivo utilizado es:
+Los archivos se almacenan en carpetas diferentes según su finalidad:
 
-.env.test
+uploads/
+├── documents/
+├── licenses/
+└── proofs/
 
-Ejemplo de configuración:
+- `documents/`: documentos de usuarios.
+- `licenses/`: licencias de usuarios.
+- `proofs/`: comprobantes asociados a entregas.
 
-PORT=8081
-MONGODB_URI=mongodb://127.0.0.1:27017/shipnow-test
-NODE_ENV=test
+La carpeta `uploads/` está incluida en `.gitignore`, por lo que los archivos cargados durante la ejecución de la aplicación no se suben al repositorio.
 
-La base de datos utilizada para los tests es independiente:
+---
 
-shipnow-test
+## Documentos de usuario
 
-De esta manera, las pruebas no modifican ni dependen de los datos utilizados durante el desarrollo normal de la aplicación.
+### Endpoint
 
-> Para ejecutar los tests localmente es necesario tener MongoDB disponible y configurar las variables de entorno correspondientes.
+POST /api/users/:uid/documents
 
-El archivo `.env.test` no debe subirse al repositorio. Cada desarrollador debe crear su propia configuración local utilizando las variables necesarias.
+La petición utiliza:
 
-## Separación de Express y servidor
+multipart/form-data
 
-La aplicación Express se encuentra separada del levantamiento del servidor:
+Campos requeridos:
 
-src/
-├── app.js
-└── server.js
+document → File
+type     → user_document
 
-`app.js` configura y exporta la aplicación Express, mientras que `server.js` se encarga de iniciar el servidor.
+El sistema:
 
-Gracias a esta separación, Supertest puede importar directamente:
+1. verifica que se haya enviado un archivo;
+2. valida que el archivo sea PDF;
+3. valida que no supere los 5 MB;
+4. valida el tipo de documento;
+5. verifica que el usuario exista;
+6. guarda el archivo en `uploads/documents`;
+7. registra los metadatos en el usuario.
 
-import app from "../src/app.js";
+---
 
-sin necesidad de levantar manualmente un puerto durante los tests.
+## Licencias de usuario
 
-## Estructura de tests
+### Endpoint
 
-La suite se encuentra dentro de:
+POST /api/users/:uid/licenses
 
-test/
-├── app.test.js
-├── logger.test.js
-├── mocks.test.js
-├── orders.test.js
-├── swagger.test.js
-├── test.setup.js
-└── users.test.js
+La petición utiliza:
 
-## Módulo Users
+multipart/form-data
 
-Se prueban los endpoints principales de usuarios.
+Campo requerido:
 
-Casos cubiertos:
+license → File
 
-* Obtener la lista de usuarios.
-* Crear un usuario correctamente.
-* Obtener un usuario existente por ID.
-* Intentar crear un usuario con datos incompletos.
-* Intentar crear un usuario con un rol inválido.
-* Consultar un usuario inexistente.
-* Consultar utilizando un ID inválido.
-* Validar la estructura del `body`.
-* Validar propiedades importantes del usuario.
+La licencia se registra automáticamente con el tipo:
 
-Entre los códigos HTTP comprobados se encuentran:
+license
 
-200 OK
-201 Created
-400 Bad Request
-404 Not Found
+El archivo se almacena en:
 
-## Módulo Orders
+uploads/licenses/
 
-Se prueban las operaciones principales de pedidos.
+y sus metadatos quedan asociados al usuario correspondiente.
 
-Casos cubiertos:
+---
 
-* Obtener la lista de pedidos.
-* Crear un pedido con datos válidos.
-* Obtener un pedido por ID.
-* Actualizar el estado de un pedido.
-* Intentar crear un pedido con datos incompletos.
-* Consultar un pedido inexistente.
-* Intentar actualizar un pedido con un estado inválido.
-* Consultar utilizando un ID inválido.
-* Validar la estructura y propiedades principales del pedido.
+## Comprobantes de entrega
 
-La actualización de estado se realiza mediante:
+### Endpoint
 
-PUT /api/orders/:oid/status
+POST /api/deliveries/:did/proof
 
-Los datos necesarios para crear pedidos durante los tests se generan dentro del propio entorno de testing, evitando depender de registros cargados manualmente.
+La petición utiliza:
 
-## Módulo Mocking
+multipart/form-data
 
-Se validan los endpoints:
+Campo requerido:
 
-GET /api/mocks/mockingusers
-GET /api/mocks/mockingorders
-POST /api/mocks/generateData
+proof → File
 
-### Generación de usuarios mock
+El sistema verifica que la entrega exista antes de asociar el comprobante.
 
-Se comprueba:
+Los comprobantes se almacenan en:
 
-* Respuesta HTTP correcta.
-* Estructura de la respuesta.
-* Existencia de `status` y `payload`.
-* Que `payload` sea un arreglo.
-* Cantidad solicitada de usuarios.
-* Propiedades principales de los usuarios generados.
+uploads/proofs/
 
-También se prueban cantidades inválidas:
+y se registran con:
 
-qty=0
-qty=-1
-qty=abc
+documentType: delivery-proof
 
-Estos casos deben responder con:
+---
 
-400 Bad Request
-INVALID_MOCK_QUANTITY
+## Metadatos
 
-### Generación de pedidos mock
+Los archivos completos no se almacenan dentro de MongoDB.
 
-Se comprueba:
+La base de datos guarda únicamente información relacionada con cada archivo, como:
 
-* Respuesta HTTP correcta.
-* Estructura del `body`.
-* Cantidad solicitada de pedidos.
-* Propiedades principales de los pedidos generados.
+{
+    "originalName": "document.pdf",
+    "fileName": "uuid-generado.pdf",
+    "path": "uploads/documents/uuid-generado.pdf",
+    "mimetype": "application/pdf",
+    "size": 395133,
+    "type": "user_document"
+}
 
-También se prueban cantidades inválidas, verificando el formato de error definido por la aplicación.
+Para los comprobantes de entrega también se registra la fecha de carga:
 
-### Generación de datos de prueba
+{
+    "originalName": "proof.pdf",
+    "fileName": "uuid-generado.pdf",
+    "path": "uploads/proofs/uuid-generado.pdf",
+    "mimetype": "application/pdf",
+    "size": 395133,
+    "documentType": "delivery-proof",
+    "uploadedAt": "2026-08-13T03:13:42.017Z"
+}
 
-También se prueba:
+---
 
-POST /api/mocks/generateData
+## Validaciones y manejo de errores
 
-La prueba genera cantidades controladas de usuarios, tiendas, pedidos y entregas.
+La carga de archivos está integrada al sistema centralizado de errores de ShipNow.
 
-Se valida:
+Se contemplan, entre otros, los siguientes errores:
 
-* Código HTTP de creación.
-* `status`.
-* `message`.
-* `payload`.
-* Cantidad de usuarios generados.
-* Cantidad de tiendas generadas.
-* Cantidad de pedidos generados.
-* Cantidad de entregas generadas.
+FILE_REQUIRED
+INVALID_FILE_TYPE
+FILE_TOO_LARGE
+INVALID_FILE_FIELD
+INVALID_DOCUMENT_TYPE
+USER_NOT_FOUND
+DELIVERY_NOT_FOUND
 
-También se prueba el comportamiento ante cantidades inválidas.
+Los errores mantienen el formato general de respuesta de la API.
 
-## Logger
+Ejemplo:
 
-Se prueba el endpoint:
+{
+    "status": "error",
+    "error": "FILE_REQUIRED",
+    "message": "Debe adjuntar un archivo"
+}
 
-GET /api/logger/test
+También se manejan los errores propios de Multer, como archivos que superan el tamaño máximo permitido o campos de archivo inesperados.
 
-El test comprueba:
+---
 
-* Código HTTP `200`.
-* Respuesta de tipo objeto.
-* `status: "success"`.
-* Existencia de `message`.
-* Existencia de `payload`.
-* Existencia del arreglo `levels`.
-* Niveles de logging configurados.
+## Logging
 
-Entre los niveles comprobados se encuentran:
+La carga de archivos está integrada con el logger de Winston.
 
-debug
-http
-info
-warning
-error
-fatal
+Se registran eventos relevantes como:
+
+- carga exitosa de documentos;
+- carga exitosa de licencias;
+- asociación de comprobantes a entregas;
+- archivos faltantes;
+- tipos de documento inválidos;
+- entidades no encontradas;
+- errores durante la carga o eliminación de archivos.
+
+---
 
 ## Swagger
 
-La suite incluye una prueba funcional para comprobar que la documentación Swagger se encuentra disponible.
+Los endpoints de carga están documentados con Swagger utilizando:
 
-Se valida:
+multipart/form-data
 
-* Acceso correcto a la documentación.
-* Código HTTP `200`.
-* Respuesta con contenido HTML.
+La documentación especifica:
 
-## Rutas inexistentes
+- parámetros de la ruta;
+- nombre del campo de archivo;
+- campos adicionales;
+- tipos permitidos;
+- respuestas exitosas;
+- posibles errores.
 
-También se prueba el comportamiento de la aplicación cuando se solicita una ruta inexistente.
+La documentación puede consultarse con el servidor iniciado en:
 
-La API debe responder:
+http://localhost:8080/api/docs
 
-404 Not Found
+---
 
-manteniendo el formato de errores definido por ShipNow:
+## Testing funcional
 
-{
-  "status": "error",
-  "error": "ROUTE_NOT_FOUND",
-  "message": "Ruta no encontrada"
-}
+Se agregaron tests funcionales para la carga de archivos utilizando:
 
-# Validación de errores
+- Mocha
+- Chai
+- Supertest
 
-Los tests no comprueban únicamente que una petición falle.
+Los tests del módulo se encuentran en:
 
-También verifican:
+test/uploads.test.js
 
-* Código HTTP correspondiente.
-* `status: "error"`.
-* Código de error.
-* Mensaje de error.
-* Estructura del `body`.
+Para las pruebas se utiliza un PDF ubicado en:
 
-Entre los errores cubiertos se encuentran:
+test/files/test-document.pdf
 
-VALIDATION_ERROR
-INVALID_USER_ROLE
-USER_NOT_FOUND
-ORDER_NOT_FOUND
-INVALID_ORDER_STATUS
-INVALID_MOCK_QUANTITY
-ROUTE_NOT_FOUND
+Los casos cubiertos son:
 
-## Datos controlados y repetibles
+- carga correcta de un documento de usuario;
+- error cuando falta el archivo;
+- error cuando el tipo de documento es inválido;
+- error cuando la entrega no existe al intentar asociar un comprobante.
 
-Los tests utilizan datos creados específicamente dentro del entorno de testing.
-
-Por ejemplo, para probar la creación de pedidos se generan previamente los usuarios y la tienda necesarios para realizar la operación.
-
-De esta manera, la suite:
-
-* No depende de datos cargados manualmente.
-* No utiliza información del entorno de desarrollo.
-* Puede ejecutarse nuevamente de forma independiente.
-* Mantiene los datos de prueba aislados.
-
-## Limpieza de la base de testing
-
-La configuración ubicada en:
-
-test/test.setup.js
-
-se encarga de conectar la suite con la base de testing.
-
-Antes de comenzar las pruebas se eliminan los registros existentes de las colecciones utilizadas y, al finalizar, los datos generados durante los tests vuelven a eliminarse.
-
-Finalmente se cierra la conexión con MongoDB.
-
-Esto evita que una ejecución afecte a la siguiente y mantiene los tests repetibles.
-
-## Resultado
-
-La suite funcional cubre los principales comportamientos de ShipNow mediante casos exitosos y errores esperados.
-
-Se encuentran cubiertos:
-
-* Users
-* Orders
-* Mocks
-* Logger
-* Swagger
-* Manejo global de rutas inexistentes
-* Formato global de errores
-* Entorno independiente de testing
-* Limpieza de datos de prueba
-
-La suite puede ejecutarse completa mediante:
+Para ejecutar todos los tests:
 
 npm test
 
-## Autor
+Resultado actual:
 
-Jessica Negri
+39 passing
+
+Para ejecutar solamente los tests de carga de archivos:
+
+npx mocha --file test/test.setup.js test/uploads.test.js
+
+Resultado:
+
+4 passing
+
+---
+
+## Archivos excluidos del repositorio
+
+Los archivos cargados durante la ejecución de la aplicación no deben subirse a GitHub.
+
+La carpeta de uploads se encuentra incluida en `.gitignore`:
+
+gitignore
+uploads/
+
+También se mantiene excluido:
+
+gitignore
+node_modules/
+
+El archivo:
+
+test/files/test-document.pdf
+
+se utiliza exclusivamente para los tests funcionales y puede mantenerse dentro del repositorio.
+
+---
+
+## Funcionalidades implementadas
+
+- Configuración centralizada de Multer.
+- Organización de archivos por carpetas.
+- Carga de documentos de usuario.
+- Carga de licencias.
+- Carga de comprobantes de entrega.
+- Generación de nombres únicos mediante UUID.
+- Validación de archivos PDF.
+- Tamaño máximo de 5 MB.
+- Validación del campo de archivo.
+- Validación del tipo de documento.
+- Asociación de archivos con usuarios y entregas.
+- Almacenamiento exclusivo de metadatos en MongoDB.
+- Manejo centralizado de errores.
+- Integración con Winston.
+- Documentación con Swagger.
+- Tests funcionales con Mocha, Chai y Supertest.
+

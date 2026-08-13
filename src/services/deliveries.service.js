@@ -46,6 +46,34 @@ export const deliveriesService = {
         return delivery;
     },
 
+    uploadProof: async (deliveryId, file) => {
+        const delivery =
+            await deliveriesRepository.findById(deliveryId);
+
+        if (!delivery) {
+            throw createError("DELIVERY_NOT_FOUND");
+        }
+
+        if (!file) {
+            throw createError("FILE_REQUIRED");
+        }
+
+        const proofData = {
+            originalName: file.originalname,
+            fileName: file.filename,
+            path: file.path,
+            mimetype: file.mimetype,
+            size: file.size,
+            documentType: "delivery-proof",
+            uploadedAt: new Date()
+        };
+
+        return deliveriesRepository.updateProof(
+            deliveryId,
+            proofData
+        );
+    },
+
     deleteDelivery: async (id) => {
         const delivery =
             await deliveriesRepository.delete(id);

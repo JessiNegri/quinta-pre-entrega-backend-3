@@ -2,6 +2,43 @@ import mongoose from "mongoose";
 
 import { USER_ROLES } from "../constants/userroles.js";
 
+const documentSchema = new mongoose.Schema(
+    {
+        originalName: {
+            type: String,
+            required: true
+        },
+
+        fileName: {
+            type: String,
+            required: true
+        },
+
+        path: {
+            type: String,
+            required: true
+        },
+
+        mimetype: {
+            type: String,
+            required: true
+        },
+
+        size: {
+            type: Number,
+            required: true
+        },
+
+        type: {
+            type: String,
+            required: true
+        }
+    },
+    {
+        timestamps: true,
+    }
+);
+
 const userSchema = new mongoose.Schema(
     {
         firstName: {
@@ -27,7 +64,7 @@ const userSchema = new mongoose.Schema(
             default: USER_ROLES.CUSTOMER
         },
         documents: {
-            type: Array,
+            type: [documentSchema],
             default: []
         }
     },

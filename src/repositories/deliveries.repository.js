@@ -25,6 +25,14 @@ export const deliveriesRepository = {
         );
     },
 
+    updateProof: async (id, proofData) => {
+        return DeliveryModel.findByIdAndUpdate(
+            id,
+            { proof: proofData },
+            { new: true }
+        );
+    },
+
     delete: async (id) => {
         return DeliveryModel.findByIdAndDelete(id);
     }

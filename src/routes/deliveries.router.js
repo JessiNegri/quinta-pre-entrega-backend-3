@@ -1,5 +1,7 @@
 import { Router } from "express";
-import { getDeliveries, getDeliveryById, createDelivery, updateDeliveryStatus, deleteDelivery } from "../controllers/deliveries.controller.js";
+import { getDeliveries, getDeliveryById, createDelivery, updateDeliveryStatus, uploadDeliveryProof, deleteDelivery } from "../controllers/deliveries.controller.js";
+
+import upload from "../middlewares/upload.middleware.js";
 
 const router = Router();
 
@@ -160,6 +162,72 @@ router.post("/", createDelivery);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.patch("/:did/status", updateDeliveryStatus);
+
+/**
+ * @swagger
+ * /api/deliveries/{did}/proof:
+ *   post:
+ *     tags:
+ *       - Deliveries
+ *     summary: Subir comprobante de una entrega
+ *     description: Sube un comprobante en formato PDF y lo asocia a una entrega existente.
+ *     parameters:
+ *       - in: path
+ *         name: did
+ *         required: true
+ *         description: ID de la entrega
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - proof
+ *             properties:
+ *               proof:
+ *                 type: string
+ *                 format: binary
+ *                 description: Comprobante de entrega en formato PDF
+ *     responses:
+ *       200:
+ *         description: Comprobante asociado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DeliveryResponse'
+ *       400:
+ *         description: Archivo requerido, campo inválido o tipo de archivo no permitido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Entrega no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       413:
+ *         description: El archivo supera el tamaño máximo permitido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+    "/:did/proof",
+    upload.single("proof"),
+    uploadDeliveryProof
+);
 
 /**
  * @swagger

@@ -1,12 +1,14 @@
+import fs from "fs";
 import { deliveriesService } from "../services/deliveries.service.js";
 import { successResponse } from "../utils/apiResponse.js";
+import logger from "../config/logger.js";
 
 export const getDeliveries = async (req, res, next) => {
     try {
         const deliveries = await deliveriesService.getDeliveries();
 
         return successResponse(res, {
-            message: "Lista de entregas",
+            message: "Entregas obtenidas correctamente",
             payload: deliveries
         });
     } catch (error) {
@@ -16,12 +18,13 @@ export const getDeliveries = async (req, res, next) => {
 
 export const getDeliveryById = async (req, res, next) => {
     try {
-        const delivery = await deliveriesService.getDeliveryById(
-            req.params.did
-        );
+        const { did } = req.params;
+
+        const delivery =
+            await deliveriesService.getDeliveryById(did);
 
         return successResponse(res, {
-            message: "Obtener entrega por id",
+            message: "Entrega obtenida correctamente",
             payload: delivery
         });
     } catch (error) {
@@ -31,7 +34,8 @@ export const getDeliveryById = async (req, res, next) => {
 
 export const createDelivery = async (req, res, next) => {
     try {
-        const delivery = await deliveriesService.createDelivery(req.body);
+        const delivery =
+            await deliveriesService.createDelivery(req.body);
 
         return successResponse(res, {
             statusCode: 201,
@@ -45,13 +49,17 @@ export const createDelivery = async (req, res, next) => {
 
 export const updateDeliveryStatus = async (req, res, next) => {
     try {
-        const delivery = await deliveriesService.updateDeliveryStatus(
-            req.params.did,
-            req.body.status
-        );
+        const { did } = req.params;
+        const { status } = req.body;
+
+        const delivery =
+            await deliveriesService.updateDeliveryStatus(
+                did,
+                status
+            );
 
         return successResponse(res, {
-            message: "Entrega actualizada",
+            message: "Estado de entrega actualizado correctamente",
             payload: delivery
         });
     } catch (error) {
@@ -59,14 +67,48 @@ export const updateDeliveryStatus = async (req, res, next) => {
     }
 };
 
-export const deleteDelivery = async (req, res, next) => {
+export const uploadDeliveryProof = async (req, res, next) => {
     try {
-        const delivery = await deliveriesService.deleteDelivery(
-            req.params.did
+        const { did } = req.params;
+
+        const delivery =
+            await deliveriesService.uploadProof(
+                did,
+                req.file
+            );
+
+        logger.info(
+            `Comprobante asociado a la entrega ${did}: ${req.file.filename}`
         );
 
         return successResponse(res, {
-            message: "Entrega eliminada",
+            message: "Comprobante asociado correctamente",
+            payload: delivery
+        });
+    } catch (error) {
+        if (req.file) {
+            try {
+                await fs.promises.unlink(req.file.path);
+            } catch (unlinkError) {
+                logger.error(
+                    `Error al eliminar archivo: ${unlinkError.message}`
+                );
+            }
+        }
+
+        next(error);
+    }
+};
+
+export const deleteDelivery = async (req, res, next) => {
+    try {
+        const { did } = req.params;
+
+        const delivery =
+            await deliveriesService.deleteDelivery(did);
+
+        return successResponse(res, {
+            message: "Entrega eliminada correctamente",
             payload: delivery
         });
     } catch (error) {

@@ -6,6 +6,16 @@ const requester = supertest(app);
 
 describe("Testing funcional del módulo Mocking", () => {
 
+    before(async () => {
+        await requester.post("/api/users").send({
+            firstName: "Mock",
+            lastName: "Customer",
+            email: `mock.customer.${Date.now()}@test.com`,
+            password: "123456",
+            role: "customer"
+        });
+    });
+
     it("Debe responder con código HTTP 200 al generar usuarios mock", async () => {
         const response = await requester.get("/api/mocks/mockingusers?qty=2");
 
@@ -164,47 +174,49 @@ describe("Testing funcional del módulo Mocking", () => {
     });
 
     it("Debe generar datos de prueba correctamente", async () => {
-    const response = await requester.post("/api/mocks/generateData").send({
-            users: 3,
-            stores: 1,
-            orders: 2
-        });
+        const response = await requester
+            .post("/api/mocks/generateData")
+            .send({
+                users: 3,
+                stores: 1,
+                orders: 2
+            });
 
-    expect(response.status).to.equal(201);
+        expect(response.status).to.equal(201);
 
-    expect(response.body).to.be.an("object");
-    expect(response.body.status).to.equal("success");
-    expect(response.body).to.have.property("message");
-    expect(response.body).to.have.property("payload");
+        expect(response.body).to.be.an("object");
+        expect(response.body.status).to.equal("success");
+        expect(response.body).to.have.property("message");
+        expect(response.body).to.have.property("payload");
 
-    expect(response.body.payload).to.be.an("object");
-    expect(response.body.payload).to.have.property("users");
-    expect(response.body.payload).to.have.property("stores");
-    expect(response.body.payload).to.have.property("orders");
-    expect(response.body.payload).to.have.property("deliveries");
+        expect(response.body.payload).to.be.an("object");
+        expect(response.body.payload).to.have.property("users");
+        expect(response.body.payload).to.have.property("stores");
+        expect(response.body.payload).to.have.property("orders");
+        expect(response.body.payload).to.have.property("deliveries");
 
-    expect(response.body.payload.users).to.equal(3);
-    expect(response.body.payload.stores).to.equal(1);
-    expect(response.body.payload.orders).to.equal(2);
-    expect(response.body.payload.deliveries).to.equal(2);
+        expect(response.body.payload.users).to.equal(3);
+        expect(response.body.payload.stores).to.equal(1);
+        expect(response.body.payload.orders).to.equal(2);
+        expect(response.body.payload.deliveries).to.equal(2);
+    });
+
+    it("Debe responder 400 al intentar generar datos con cantidades inválidas", async () => {
+        const response = await requester
+            .post("/api/mocks/generateData")
+            .send({
+                users: 2,
+                stores: 0,
+                orders: -1
+            });
+
+        expect(response.status).to.equal(400);
+
+        expect(response.body).to.be.an("object");
+        expect(response.body.status).to.equal("error");
+        expect(response.body.error).to.equal(
+            "INVALID_MOCK_QUANTITY"
+        );
+        expect(response.body).to.have.property("message");
+    });
 });
-
-it("Debe responder 400 al intentar generar datos con cantidades inválidas", async () => {
-    const response = await requester.post("/api/mocks/generateData").send({
-            users: 2,
-            stores: 0,
-            orders: -1
-        });
-
-    expect(response.status).to.equal(400);
-
-    expect(response.body).to.be.an("object");
-    expect(response.body.status).to.equal("error");
-    expect(response.body.error).to.equal(
-        "INVALID_MOCK_QUANTITY"
-    );
-    expect(response.body).to.have.property("message");
-});
-
-});
-
