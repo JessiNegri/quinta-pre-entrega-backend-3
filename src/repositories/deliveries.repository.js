@@ -1,16 +1,26 @@
 import DeliveryModel from "../models/delivery.model.js";
 
 export const deliveriesRepository = {
-    findAll: async () => {
-        return DeliveryModel.find()
-            .populate("order")
-            .populate("driver");
+    findAll: async ({ page = 1, limit = 10 } = {}) => {
+        const skip = (page - 1) * limit;
+
+        const [deliveries, total] = await Promise.all([
+            DeliveryModel.find()
+                .skip(skip)
+                .limit(limit),
+            DeliveryModel.countDocuments()
+        ]);
+
+        return {
+            deliveries,
+            total
+        };
     },
 
     findById: async (id) => {
         return DeliveryModel.findById(id)
             .populate("order")
-            .populate("driver");
+            .populate("driver", "-password");
     },
 
     create: async (deliveryData) => {

@@ -1,3 +1,4 @@
+import { envConfig } from "./env.js";
 import winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 
@@ -15,9 +16,7 @@ const customLevels = {
 const logger = winston.createLogger({
     levels: customLevels.levels,
 
-    level: process.env.NODE_ENV === "production"
-        ? "info"
-        : "debug",
+    level: envConfig.logLevel,
 
     format: winston.format.combine(
         winston.format.timestamp({

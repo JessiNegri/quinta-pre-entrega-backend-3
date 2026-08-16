@@ -4,8 +4,11 @@ import { createError } from "../utils/apiResponse.js";
 import { DOCUMENT_TYPES } from "../constants/documentTypes.js";
 
 export const usersService = {
-    getUsers: async () => {
-        return usersRepository.findAll();
+    getUsers: async ({ page = 1, limit = 10 } = {}) => {
+        return usersRepository.findAll({
+            page,
+            limit
+        });
     },
 
     getUserById: async (id) => {

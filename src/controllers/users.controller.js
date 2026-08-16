@@ -6,11 +6,21 @@ import logger from "../config/logger.js";
 
 export const getUsers = async (req, res, next) => {
     try {
-        const users = await usersService.getUsers();
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1),100);
 
-        return successResponse(res, {
+        const { users, total } = await usersService.getUsers({ page, limit });
+
+        return res.status(200).json({
+            status: "success",
             message: "Lista de usuarios",
-            payload: users
+            payload: users,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
         });
     } catch (error) {
         next(error);

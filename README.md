@@ -1,325 +1,157 @@
-# Pre-entrega Módulo 7 — Carga de archivos, documentos y comprobantes
+# Pre-entrega Módulo 8 — Performance, escalabilidad y Docker
 
-## ShipNow API
+## Performance
 
-En esta pre-entrega se incorporó a ShipNow la carga y gestión de archivos utilizando **Multer**.
+Se incorporó paginación en los endpoints que pueden devolver colecciones grandes:
 
-La API permite subir documentos de usuarios, licencias y comprobantes de entrega mediante `multipart/form-data`, almacenarlos en carpetas organizadas del servidor y registrar únicamente sus metadatos en MongoDB.
+- `GET /api/users`
+- `GET /api/orders`
+- `GET /api/deliveries`
 
-La implementación se integra con el sistema existente de errores, logging, Swagger y testing funcional.
+Los endpoints aceptan los parámetros de consulta `page` y `limit`.
 
----
+El valor por defecto de `page` es `1` y el valor por defecto de `limit` es `10`.
 
-## Tecnologías utilizadas
+Las respuestas incluyen información de paginación mediante los campos:
 
-- Node.js
-- Express
-- MongoDB
-- Mongoose
-- Multer
-- Winston
-- Swagger
-- Mocha
-- Chai
-- Supertest
+- `page`
+- `limit`
+- `total`
+- `totalPages`
 
----
+La paginación fue documentada en Swagger para Users, Orders y Deliveries.
 
-## Configuración de Multer
+También se optimizaron las consultas de los repositorios utilizando `Promise.all()` para ejecutar en paralelo la obtención de los registros y el conteo total de documentos.
 
-La configuración de Multer se encuentra centralizada en:
+Se redujeron payloads innecesarios evitando devolver el campo `password` de los usuarios. Esto también se aplicó a las relaciones pobladas de `customer` en pedidos y `driver` en entregas.
 
-src/middlewares/upload.middleware.js
+La generación de pedidos mock fue ajustada para garantizar la existencia de usuarios con roles `customer` y `store`, evitando resultados aleatorios inválidos durante los tests.
 
-Esta configuración se encarga de:
+## Carga de archivos
 
-- determinar la carpeta de destino;
-- generar nombres únicos para los archivos;
-- validar el tipo de archivo;
-- limitar el tamaño máximo;
-- validar el campo utilizado para subir el archivo.
+Se mantienen las restricciones de carga implementadas con Multer:
 
-Los nombres de los archivos se generan utilizando UUID para evitar colisiones.
+- Solo se permiten archivos PDF.
+- El tamaño máximo permitido es de 5 MB.
+- Se manejan de forma controlada los errores por tipo de archivo y tamaño máximo.
+- Los archivos generados en `uploads` no se incluyen en el repositorio ni en la imagen Docker.
 
-Actualmente se aceptan archivos:
+## Variables de entorno
 
-application/pdf
+La aplicación utiliza variables de entorno para su configuración y valida al iniciar que estén presentes las variables requeridas:
 
-El tamaño máximo permitido es:
+- `PORT`
+- `MONGODB_URI`
+- `NODE_ENV`
+- `LOG_LEVEL`
 
-5 MB
+El archivo `.env.example` contiene la estructura necesaria para configurar el proyecto sin incluir información sensible.
 
----
+Configuración de ejemplo:
 
-## Estructura de archivos
+```env
+PORT=8080
+MONGODB_URI=
+NODE_ENV=development
+LOG_LEVEL=debug
+```
 
-Los archivos se almacenan en carpetas diferentes según su finalidad:
+El logger utiliza `LOG_LEVEL` para determinar el nivel de logs de la aplicación.
 
-uploads/
-├── documents/
-├── licenses/
-└── proofs/
+## Health Check
 
-- `documents/`: documentos de usuarios.
-- `licenses/`: licencias de usuarios.
-- `proofs/`: comprobantes asociados a entregas.
+Se incorporó el endpoint:
 
-La carpeta `uploads/` está incluida en `.gitignore`, por lo que los archivos cargados durante la ejecución de la aplicación no se suben al repositorio.
+`GET /health`
 
----
+Este endpoint permite comprobar el estado de la API sin exponer información sensible.
 
-## Documentos de usuario
+La respuesta incluye:
 
-### Endpoint
+- `status`
+- `environment`
+- `uptime`
+- `timestamp`
 
-POST /api/users/:uid/documents
+El health check fue probado correctamente tanto en `development` como en `production`.
 
-La petición utiliza:
+## Endpoints internos en producción
 
-multipart/form-data
+Se definió un criterio para los endpoints internos de la aplicación.
 
-Campos requeridos:
+Cuando `NODE_ENV=production`:
 
-document → File
-type     → user_document
+- `/api/mocks` se encuentra deshabilitado.
+- `/api/logger` se encuentra deshabilitado.
+- `/api/docs` permanece disponible para consultar la documentación Swagger.
+- `/health` permanece disponible para verificar el estado de la aplicación.
 
-El sistema:
+Se comprobó que `/api/mocks` y `/api/logger` devuelven `ROUTE_NOT_FOUND` en producción, mientras Swagger y el health check continúan disponibles.
 
-1. verifica que se haya enviado un archivo;
-2. valida que el archivo sea PDF;
-3. valida que no supere los 5 MB;
-4. valida el tipo de documento;
-5. verifica que el usuario exista;
-6. guarda el archivo en `uploads/documents`;
-7. registra los metadatos en el usuario.
+## Docker
 
----
+El proyecto incorpora un `Dockerfile` para ejecutar ShipNow dentro de un contenedor.
 
-## Licencias de usuario
+La imagen utiliza Node.js 22 Alpine y configura el directorio de trabajo de la aplicación.
 
-### Endpoint
+Las dependencias necesarias para producción se instalan mediante:
 
-POST /api/users/:uid/licenses
+```bash
+npm ci --omit=dev
+```
 
-La petición utiliza:
+También se incorporó un archivo `.dockerignore` para evitar copiar archivos innecesarios o sensibles a la imagen.
 
-multipart/form-data
+Entre los archivos y directorios excluidos se encuentran:
 
-Campo requerido:
+- `node_modules`
+- archivos `.env`
+- `.git`
+- `logs`
+- `uploads`
+- `coverage`
+- `test`
+- archivos temporales
 
-license → File
+## Construcción de la imagen Docker
 
-La licencia se registra automáticamente con el tipo:
+Desde la raíz del proyecto se puede construir la imagen mediante:
 
-license
+docker build -t shipnow-api .
 
-El archivo se almacena en:
+La imagen generada se denomina `shipnow-api`.
 
-uploads/licenses/
+## Ejecución del contenedor
 
-y sus metadatos quedan asociados al usuario correspondiente.
+Para ejecutar la API dentro de Docker utilizando MongoDB instalado en la máquina host se utiliza:
 
----
+docker run --env-file .env -e MONGODB_URI=mongodb://host.docker.internal:27017/shipnow-api-85760 -p 8080:8080 --name shipnow-container shipnow-api
 
-## Comprobantes de entrega
+Se utiliza `host.docker.internal` para permitir que el contenedor acceda al servidor MongoDB que se ejecuta en la máquina host.
 
-### Endpoint
+La aplicación queda disponible en el puerto `8080`.
 
-POST /api/deliveries/:did/proof
+## Verificación con Docker
 
-La petición utiliza:
+Con la aplicación ejecutándose dentro del contenedor se verificaron correctamente:
 
-multipart/form-data
+- Conexión con MongoDB.
+- `GET /health`
+- `GET /api/docs`
+- `GET /api/users?page=1&limit=2`
+- Paginación de Users.
+- Paginación de Orders.
+- Paginación de Deliveries.
+- Documentación de `page` y `limit` en Swagger.
 
-Campo requerido:
+También se ejecutó la aplicación con `NODE_ENV=production` para comprobar el comportamiento de los endpoints internos.
 
-proof → File
+## Tests
 
-El sistema verifica que la entrega exista antes de asociar el comprobante.
+Luego de las modificaciones realizadas para esta pre-entrega se ejecutó nuevamente la suite completa de tests funcionales.
 
-Los comprobantes se almacenan en:
+Resultado final:
 
-uploads/proofs/
+41 passing
 
-y se registran con:
-
-documentType: delivery-proof
-
----
-
-## Metadatos
-
-Los archivos completos no se almacenan dentro de MongoDB.
-
-La base de datos guarda únicamente información relacionada con cada archivo, como:
-
-{
-    "originalName": "document.pdf",
-    "fileName": "uuid-generado.pdf",
-    "path": "uploads/documents/uuid-generado.pdf",
-    "mimetype": "application/pdf",
-    "size": 395133,
-    "type": "user_document"
-}
-
-Para los comprobantes de entrega también se registra la fecha de carga:
-
-{
-    "originalName": "proof.pdf",
-    "fileName": "uuid-generado.pdf",
-    "path": "uploads/proofs/uuid-generado.pdf",
-    "mimetype": "application/pdf",
-    "size": 395133,
-    "documentType": "delivery-proof",
-    "uploadedAt": "2026-08-13T03:13:42.017Z"
-}
-
----
-
-## Validaciones y manejo de errores
-
-La carga de archivos está integrada al sistema centralizado de errores de ShipNow.
-
-Se contemplan, entre otros, los siguientes errores:
-
-FILE_REQUIRED
-INVALID_FILE_TYPE
-FILE_TOO_LARGE
-INVALID_FILE_FIELD
-INVALID_DOCUMENT_TYPE
-USER_NOT_FOUND
-DELIVERY_NOT_FOUND
-
-Los errores mantienen el formato general de respuesta de la API.
-
-Ejemplo:
-
-{
-    "status": "error",
-    "error": "FILE_REQUIRED",
-    "message": "Debe adjuntar un archivo"
-}
-
-También se manejan los errores propios de Multer, como archivos que superan el tamaño máximo permitido o campos de archivo inesperados.
-
----
-
-## Logging
-
-La carga de archivos está integrada con el logger de Winston.
-
-Se registran eventos relevantes como:
-
-- carga exitosa de documentos;
-- carga exitosa de licencias;
-- asociación de comprobantes a entregas;
-- archivos faltantes;
-- tipos de documento inválidos;
-- entidades no encontradas;
-- errores durante la carga o eliminación de archivos.
-
----
-
-## Swagger
-
-Los endpoints de carga están documentados con Swagger utilizando:
-
-multipart/form-data
-
-La documentación especifica:
-
-- parámetros de la ruta;
-- nombre del campo de archivo;
-- campos adicionales;
-- tipos permitidos;
-- respuestas exitosas;
-- posibles errores.
-
-La documentación puede consultarse con el servidor iniciado en:
-
-http://localhost:8080/api/docs
-
----
-
-## Testing funcional
-
-Se agregaron tests funcionales para la carga de archivos utilizando:
-
-- Mocha
-- Chai
-- Supertest
-
-Los tests del módulo se encuentran en:
-
-test/uploads.test.js
-
-Para las pruebas se utiliza un PDF ubicado en:
-
-test/files/test-document.pdf
-
-Los casos cubiertos son:
-
-- carga correcta de un documento de usuario;
-- error cuando falta el archivo;
-- error cuando el tipo de documento es inválido;
-- error cuando la entrega no existe al intentar asociar un comprobante.
-
-Para ejecutar todos los tests:
-
-npm test
-
-Resultado actual:
-
-39 passing
-
-Para ejecutar solamente los tests de carga de archivos:
-
-npx mocha --file test/test.setup.js test/uploads.test.js
-
-Resultado:
-
-4 passing
-
----
-
-## Archivos excluidos del repositorio
-
-Los archivos cargados durante la ejecución de la aplicación no deben subirse a GitHub.
-
-La carpeta de uploads se encuentra incluida en `.gitignore`:
-
-gitignore
-uploads/
-
-También se mantiene excluido:
-
-gitignore
-node_modules/
-
-El archivo:
-
-test/files/test-document.pdf
-
-se utiliza exclusivamente para los tests funcionales y puede mantenerse dentro del repositorio.
-
----
-
-## Funcionalidades implementadas
-
-- Configuración centralizada de Multer.
-- Organización de archivos por carpetas.
-- Carga de documentos de usuario.
-- Carga de licencias.
-- Carga de comprobantes de entrega.
-- Generación de nombres únicos mediante UUID.
-- Validación de archivos PDF.
-- Tamaño máximo de 5 MB.
-- Validación del campo de archivo.
-- Validación del tipo de documento.
-- Asociación de archivos con usuarios y entregas.
-- Almacenamiento exclusivo de metadatos en MongoDB.
-- Manejo centralizado de errores.
-- Integración con Winston.
-- Documentación con Swagger.
-- Tests funcionales con Mocha, Chai y Supertest.
-
+Esto permitió comprobar que las optimizaciones y la preparación para Docker no afectaron el funcionamiento de las funcionalidades desarrolladas en los módulos anteriores.

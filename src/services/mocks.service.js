@@ -33,25 +33,44 @@ export const mocksService = {
 
         const mockUsers = await generateMockUsers(qty * 3);
 
-        const owners = mockUsers.filter(user => user.role === USER_ROLES.STORE);
+        if (mockUsers.length >= 2) {
+            mockUsers[0].role = USER_ROLES.CUSTOMER;
+            mockUsers[1].role = USER_ROLES.STORE;
+        }
 
-        const customers = mockUsers.filter(user => user.role === USER_ROLES.CUSTOMER);
+        const owners = mockUsers.filter(
+            user => user.role === USER_ROLES.STORE
+        );
+
+        const customers = mockUsers.filter(
+            user => user.role === USER_ROLES.CUSTOMER
+        );
 
         if (owners.length === 0) {
-            logger.warning("No se encontraron usuarios con rol store para generar mocks");
+            logger.warning(
+                "No se encontraron usuarios con rol store para generar mocks"
+            );
             throw createError("STORE_NOT_FOUND");
         }
 
         if (customers.length === 0) {
-            logger.warning("No se encontraron usuarios customer para generar mocks");
+            logger.warning(
+                "No se encontraron usuarios customer para generar mocks"
+            );
             throw createError("USER_NOT_FOUND");
         }
 
         const mockStores = generateMockStores(owners);
 
-        const mockOrders = generateMockOrders(qty, customers, mockStores);
+        const mockOrders = generateMockOrders(
+            qty,
+            customers,
+            mockStores
+        );
 
-        logger.info(`${mockOrders.length} pedidos mock generados correctamente`);
+        logger.info(
+            `${mockOrders.length} pedidos mock generados correctamente`
+        );
 
         return mockOrders;
     },
@@ -82,19 +101,27 @@ export const mocksService = {
         );
 
         const mockUsers = await generateMockUsers(users);
+
         if (mockUsers.length >= 3) {
             mockUsers[0].role = USER_ROLES.CUSTOMER;
             mockUsers[1].role = USER_ROLES.STORE;
             mockUsers[2].role = USER_ROLES.DRIVER;
         }
 
-        const createdUsers = await ordersRepository.insertManyUsers(mockUsers);
+        const createdUsers =
+            await ordersRepository.insertManyUsers(mockUsers);
 
-        const owners = createdUsers.filter(user => user.role === USER_ROLES.STORE);
+        const owners = createdUsers.filter(
+            user => user.role === USER_ROLES.STORE
+        );
 
-        const customers = createdUsers.filter(user => user.role === USER_ROLES.CUSTOMER);
+        const customers = createdUsers.filter(
+            user => user.role === USER_ROLES.CUSTOMER
+        );
 
-        const drivers = createdUsers.filter(user => user.role === USER_ROLES.DRIVER);
+        const drivers = createdUsers.filter(
+            user => user.role === USER_ROLES.DRIVER
+        );
 
         if (owners.length === 0) {
             logger.warning("No se encontraron usuarios con rol store");
@@ -111,21 +138,26 @@ export const mocksService = {
             throw createError("DRIVER_NOT_FOUND");
         }
 
-        const mockStores = generateMockStores(owners.slice(0, stores));
+        const mockStores = generateMockStores(
+            owners.slice(0, stores)
+        );
 
         const createdStores =
             await ordersRepository.insertManyStores(mockStores);
 
-        const mockOrders = generateMockOrders(orders, customers, createdStores);
+        const mockOrders = generateMockOrders(
+            orders,
+            customers,
+            createdStores
+        );
 
         const createdOrders =
             await ordersRepository.insertManyOrders(mockOrders);
 
-        const mockDeliveries =
-            generateMockDeliveries(
-                createdOrders,
-                drivers
-            );
+        const mockDeliveries = generateMockDeliveries(
+            createdOrders,
+            drivers
+        );
 
         const createdDeliveries =
             await ordersRepository.insertManyDeliveries(
@@ -144,4 +176,3 @@ export const mocksService = {
         };
     }
 };
-

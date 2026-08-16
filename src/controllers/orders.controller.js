@@ -3,11 +3,22 @@ import { successResponse } from "../utils/apiResponse.js";
 
 export const getOrders = async (req, res, next) => {
     try {
-        const orders = await ordersService.getOrders();
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
 
-        return successResponse(res, {
+        const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1),100);
+
+        const { orders, total } = await ordersService.getOrders({ page, limit });
+
+        return res.status(200).json({
+            status: "success",
             message: "Lista de pedidos",
-            payload: orders
+            payload: orders,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
         });
     } catch (error) {
         next(error);

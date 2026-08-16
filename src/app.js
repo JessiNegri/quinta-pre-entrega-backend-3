@@ -29,9 +29,11 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-    res.json({
+    res.status(200).json({
         status: "success",
-        message: "API funcionando"
+        environment: process.env.NODE_ENV,
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -40,13 +42,10 @@ app.use("/api/stores", storesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/deliveries", deliveriesRouter);
 
-//Protección de mocks en router para no quedar expuesto en producción
 if (process.env.NODE_ENV !== "production") {
-    app.use('/api/mocks', mocksRouter);
+    app.use("/api/mocks", mocksRouter);
+    app.use("/api/logger", loggerRouter);
 }
-
-// Router de prueba del logger 
-app.use("/api/logger", loggerRouter);
 
 // Middleware para rutas inexistentes
 app.use(notFoundHandler);

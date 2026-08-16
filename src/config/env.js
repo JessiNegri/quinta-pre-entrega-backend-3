@@ -4,7 +4,7 @@ dotenv.config({
     path: process.env.NODE_ENV === "test" ? ".env.test" : ".env"
 });
 
-const requiredEnvVars = ["PORT", "MONGODB_URI", "NODE_ENV"];
+const requiredEnvVars = [ "PORT", "MONGODB_URI", "NODE_ENV", "LOG_LEVEL" ];
 
 requiredEnvVars.forEach((envVar) => {
     if (!process.env[envVar]) {
@@ -15,5 +15,6 @@ requiredEnvVars.forEach((envVar) => {
 export const envConfig = {
     port: process.env.PORT,
     mongoUri: process.env.MONGODB_URI,
-    nodeEnv: process.env.NODE_ENV
+    nodeEnv: process.env.NODE_ENV,
+    logLevel: process.env.LOG_LEVEL
 };

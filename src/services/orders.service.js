@@ -5,8 +5,11 @@ import { createError } from "../utils/apiResponse.js";
 import logger from "../config/logger.js";
 
 export const ordersService = {
-    getOrders: async () => {
-        return ordersRepository.findAll();
+    getOrders: async ({ page = 1, limit = 10 } = {}) => {
+        return ordersRepository.findAll({
+            page,
+            limit
+        });
     },
 
     getOrderById: async (id) => {

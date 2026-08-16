@@ -4,15 +4,25 @@ import StoreModel from "../models/store.model.js";
 import DeliveryModel from "../models/delivery.model.js";
 
 export const ordersRepository = {
-    findAll: async () => {
-        return OrderModel.find()
-            .populate("customer")
-            .populate("store");
+    findAll: async ({ page = 1, limit = 10 } = {}) => {
+        const skip = (page - 1) * limit;
+
+        const [orders, total] = await Promise.all([
+            OrderModel.find()
+                .skip(skip)
+                .limit(limit),
+            OrderModel.countDocuments()
+        ]);
+
+        return {
+            orders,
+            total
+        };
     },
 
     findById: async (id) => {
         return OrderModel.findById(id)
-            .populate("customer")
+            .populate("customer", "-password")
             .populate("store");
     },
 

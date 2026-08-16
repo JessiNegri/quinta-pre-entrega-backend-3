@@ -10,6 +10,7 @@
     "test": "cross-env NODE_ENV=test mocha --file test/test.setup.js test/**/*.test.js"
   },
   "dependencies": {
+    "@faker-js/faker": "^10.6.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -22,7 +23,6 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.5.0",
     "chai": "^6.2.2",
     "cross-env": "^10.1.0",
     "mocha": "^11.8.0",

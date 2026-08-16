@@ -3,9 +3,11 @@ import { ORDER_STATUS } from "../constants/orderstatus.js";
 import { createError } from "../utils/apiResponse.js";
 
 export const deliveriesService = {
-
-    getDeliveries: async () => {
-        return deliveriesRepository.findAll();
+    getDeliveries: async ({ page = 1, limit = 10 } = {}) => {
+        return deliveriesRepository.findAll({
+            page,
+            limit
+        });
     },
 
     getDeliveryById: async (id) => {
