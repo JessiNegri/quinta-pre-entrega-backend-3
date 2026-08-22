@@ -1,53 +1,123 @@
-# Pre-entrega Módulo 8 — Performance, escalabilidad y Docker
+# ShipNow API
 
-## Performance
+API REST backend desarrollada para la gestión de un sistema de logística y envíos.
 
-Se incorporó paginación en los endpoints que pueden devolver colecciones grandes:
+ShipNow permite administrar usuarios, tiendas, pedidos y entregas, incorporando una arquitectura por capas, generación de datos simulados, manejo global de errores, logging, documentación con Swagger, testing funcional, carga de archivos, paginación, health check y contenerización con Docker.
 
-- `GET /api/users`
-- `GET /api/orders`
-- `GET /api/deliveries`
+El proyecto fue desarrollado con Node.js, Express y MongoDB, buscando mantener una estructura organizada, modular y preparada para distintos entornos de ejecución.
 
-Los endpoints aceptan los parámetros de consulta `page` y `limit`.
+---
 
-El valor por defecto de `page` es `1` y el valor por defecto de `limit` es `10`.
+## Tecnologías utilizadas
 
-Las respuestas incluyen información de paginación mediante los campos:
+- Node.js
+- Express
+- MongoDB
+- Mongoose
+- JavaScript ES Modules
+- dotenv
+- bcryptjs
+- Faker
+- Winston
+- Swagger / OpenAPI
+- Multer
+- Mocha
+- Chai
+- Supertest
+- Docker
+- Docker Compose
 
-- `page`
-- `limit`
-- `total`
-- `totalPages`
+---
 
-La paginación fue documentada en Swagger para Users, Orders y Deliveries.
+## Arquitectura
 
-También se optimizaron las consultas de los repositorios utilizando `Promise.all()` para ejecutar en paralelo la obtención de los registros y el conteo total de documentos.
+El proyecto utiliza una arquitectura por capas para separar las responsabilidades de la aplicación.
 
-Se redujeron payloads innecesarios evitando devolver el campo `password` de los usuarios. Esto también se aplicó a las relaciones pobladas de `customer` en pedidos y `driver` en entregas.
+El flujo principal es:
 
-La generación de pedidos mock fue ajustada para garantizar la existencia de usuarios con roles `customer` y `store`, evitando resultados aleatorios inválidos durante los tests.
+```text
+Route
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Repository
+  ↓
+Model
+  ↓
+MongoDB
+```
 
-## Carga de archivos
+### Routes
 
-Se mantienen las restricciones de carga implementadas con Multer:
+Definen los endpoints disponibles y conectan cada solicitud con su controller correspondiente.
 
-- Solo se permiten archivos PDF.
-- El tamaño máximo permitido es de 5 MB.
-- Se manejan de forma controlada los errores por tipo de archivo y tamaño máximo.
-- Los archivos generados en `uploads` no se incluyen en el repositorio ni en la imagen Docker.
+### Controllers
+
+Reciben las solicitudes HTTP, delegan la lógica al service y construyen las respuestas de la API.
+
+### Services
+
+Contienen la lógica de negocio, validaciones y reglas de cada módulo.
+
+### Repositories
+
+Centralizan el acceso a la base de datos mediante los modelos de Mongoose.
+
+### Models
+
+Definen los schemas y modelos utilizados para almacenar información en MongoDB.
+
+Esta separación evita incluir lógica de negocio o acceso directo a la base de datos dentro de los routers.
+
+---
+
+## Estructura general del proyecto
+
+```text
+src/
+├── config/
+├── constants/
+├── controllers/
+├── middlewares/
+├── mocks/
+├── models/
+├── repositories/
+├── routes/
+├── services/
+├── utils/
+├── app.js
+└── server.js
+
+test/
+├── app.test.js
+├── deliveries.test.js
+├── health.test.js
+├── logger.test.js
+├── mocks.test.js
+├── orders.test.js
+├── swagger.test.js
+├── uploads.test.js
+├── users.test.js
+└── test.setup.js
+
+Dockerfile
+docker-compose.yml
+.dockerignore
+.env.example
+.gitignore
+package.json
+README.md
+```
+
+---
 
 ## Variables de entorno
 
-La aplicación utiliza variables de entorno para su configuración y valida al iniciar que estén presentes las variables requeridas:
+El proyecto utiliza variables de entorno centralizadas.
 
-- `PORT`
-- `MONGODB_URI`
-- `NODE_ENV`
-- `LOG_LEVEL`
-
-El archivo `.env.example` contiene la estructura necesaria para configurar el proyecto sin incluir información sensible.
-
-Configuración de ejemplo:
+Se incluye un archivo `.env.example` como referencia.
 
 ```env
 PORT=8080
@@ -56,102 +126,623 @@ NODE_ENV=development
 LOG_LEVEL=debug
 ```
 
-El logger utiliza `LOG_LEVEL` para determinar el nivel de logs de la aplicación.
+Para ejecutar el proyecto localmente se debe crear un archivo `.env` a partir de `.env.example` y configurar `MONGODB_URI` con la conexión correspondiente a MongoDB.
+
+Ejemplo para una instancia local:
+
+```env
+PORT=8080
+MONGODB_URI=mongodb://localhost:27017/shipnow
+NODE_ENV=development
+LOG_LEVEL=debug
+```
+
+El archivo `.env` real no debe subirse al repositorio.
+
+El entorno de testing utiliza una configuración independiente mediante `.env.test`, permitiendo separar la base de datos utilizada durante las pruebas de la base de desarrollo.
+
+---
+
+## Instalación
+
+Clonar el repositorio e instalar las dependencias:
+
+```bash
+npm install
+```
+
+Luego crear el archivo `.env` y configurar las variables necesarias.
+
+---
+
+## Ejecución en desarrollo
+
+Para ejecutar la API utilizando Nodemon:
+
+```bash
+npm run dev
+```
+
+La aplicación queda disponible por defecto en:
+
+```text
+http://localhost:8080
+```
+
+Para ejecutar la aplicación sin Nodemon:
+
+```bash
+npm start
+```
+
+---
 
 ## Health Check
 
-Se incorporó el endpoint:
+La API incluye un endpoint de health check que permite comprobar rápidamente que el servicio está funcionando.
 
-`GET /health`
+```http
+GET /health
+```
 
-Este endpoint permite comprobar el estado de la API sin exponer información sensible.
+Ejemplo de respuesta:
 
-La respuesta incluye:
+```json
+{
+  "status": "success",
+  "environment": "development",
+  "uptime": 72.74,
+  "timestamp": "2026-08-18T21:14:09.476Z"
+}
+```
 
-- `status`
-- `environment`
-- `uptime`
-- `timestamp`
+El endpoint informa:
 
-El health check fue probado correctamente tanto en `development` como en `production`.
+- estado del servicio;
+- entorno actual;
+- tiempo de actividad;
+- timestamp de la respuesta.
 
-## Endpoints internos en producción
+No expone credenciales ni información sensible.
 
-Se definió un criterio para los endpoints internos de la aplicación.
+---
 
-Cuando `NODE_ENV=production`:
+## Documentación Swagger
 
-- `/api/mocks` se encuentra deshabilitado.
-- `/api/logger` se encuentra deshabilitado.
-- `/api/docs` permanece disponible para consultar la documentación Swagger.
-- `/health` permanece disponible para verificar el estado de la aplicación.
+La documentación interactiva de la API está disponible en:
 
-Se comprobó que `/api/mocks` y `/api/logger` devuelven `ROUTE_NOT_FOUND` en producción, mientras Swagger y el health check continúan disponibles.
+```text
+http://localhost:8080/api/docs
+```
+
+Swagger utiliza OpenAPI 3.0 y documenta los principales módulos de ShipNow:
+
+- Users
+- Stores
+- Orders
+- Deliveries
+- Mocks
+- Logger
+- Health
+- carga de documentos
+- carga de comprobantes
+
+También incluye schemas reutilizables, respuestas exitosas, respuestas de error, parámetros de paginación y carga de archivos mediante `multipart/form-data`.
+
+---
+
+## Endpoints principales
+
+### Health
+
+```http
+GET /health
+```
+
+### Users
+
+```http
+GET    /api/users
+GET    /api/users/:uid
+POST   /api/users
+PUT    /api/users/:uid
+DELETE /api/users/:uid
+```
+
+La consulta general de usuarios admite paginación mediante:
+
+```text
+?page=1&limit=10
+```
+
+### Documentos de usuarios
+
+```http
+POST /api/users/:uid/documents
+```
+
+Permite asociar documentos PDF a usuarios mediante Multer.
+
+### Stores
+
+```http
+GET    /api/stores
+GET    /api/stores/:sid
+POST   /api/stores
+PUT    /api/stores/:sid
+DELETE /api/stores/:sid
+```
+
+### Orders
+
+```http
+GET    /api/orders
+GET    /api/orders/:oid
+POST   /api/orders
+PATCH  /api/orders/:oid/status
+DELETE /api/orders/:oid
+```
+
+La consulta general admite paginación:
+
+```text
+?page=1&limit=10
+```
+
+Los pedidos utilizan estados controlados por constantes del proyecto.
+
+### Deliveries
+
+```http
+GET    /api/deliveries
+GET    /api/deliveries/:did
+POST   /api/deliveries
+PATCH  /api/deliveries/:did/status
+DELETE /api/deliveries/:did
+```
+
+La consulta general admite paginación:
+
+```text
+?page=1&limit=10
+```
+
+Los estados de las entregas permiten representar el seguimiento del proceso logístico desde su creación hasta su entrega o cancelación.
+
+### Comprobantes de entregas
+
+```http
+POST /api/deliveries/:did/proof
+```
+
+Permite cargar y asociar un comprobante PDF a una entrega existente.
+
+### Mocks
+
+El módulo de mocking permite generar datos simulados consistentes con los modelos reales.
+
+Entre los endpoints disponibles se encuentran:
+
+```http
+GET  /api/mocks/mockingusers
+GET  /api/mocks/mockingorders
+POST /api/mocks/generateData
+```
+
+Los mocks utilizan Faker y las constantes definidas por el proyecto para generar roles, estados y prioridades válidas.
+
+### Logger
+
+```http
+GET /api/logger/test
+```
+
+Permite validar el funcionamiento del sistema de logging durante el desarrollo.
+
+Los endpoints internos de mocks y logger no se habilitan cuando la aplicación se ejecuta en ambiente de producción.
+
+Para consultar la documentación completa de parámetros, cuerpos de solicitud y respuestas, utilizar Swagger en `/api/docs`.
+
+---
+
+## Manejo global de errores
+
+ShipNow utiliza un middleware global de errores para mantener respuestas consistentes en toda la API.
+
+El formato general es:
+
+```json
+{
+  "status": "error",
+  "error": "ERROR_CODE",
+  "message": "Mensaje descriptivo"
+}
+```
+
+El proyecto contempla errores del dominio como:
+
+- recursos inexistentes;
+- IDs inválidos;
+- datos incompletos;
+- roles inválidos;
+- estados inválidos;
+- archivos requeridos;
+- tipos de archivo no permitidos;
+- archivos demasiado grandes;
+- cantidades inválidas para generación de mocks;
+- rutas inexistentes.
+
+Esto evita implementar respuestas de error diferentes en cada endpoint.
+
+---
+
+## Logging
+
+El proyecto utiliza Winston como sistema centralizado de logging.
+
+Se registran eventos relevantes de la aplicación utilizando diferentes niveles de log.
+
+En desarrollo se dispone de salida por consola para facilitar el seguimiento de la aplicación.
+
+Los archivos generados dentro de `logs/` son archivos de ejecución y no forman parte del repositorio.
+
+La carpeta se encuentra ignorada mediante `.gitignore`.
+
+---
+
+## Carga de archivos
+
+La API utiliza Multer para administrar la carga de archivos.
+
+Se contemplan principalmente:
+
+- documentos asociados a usuarios;
+- licencias;
+- comprobantes asociados a entregas.
+
+Los archivos permitidos son PDF.
+
+El sistema valida:
+
+- existencia del archivo;
+- campo utilizado;
+- tipo MIME;
+- tipo de documento;
+- tamaño máximo permitido.
+
+El límite configurado es de:
+
+```text
+5 MB
+```
+
+Además del archivo físico, la API almacena metadata asociada en la entidad correspondiente.
+
+Entre los datos registrados pueden encontrarse:
+
+```text
+originalName
+fileName
+path
+mimetype
+size
+documentType
+```
+
+Las carpetas y archivos generados localmente dentro de `uploads/` no se suben al repositorio.
+
+---
+
+## Paginación y performance
+
+Los endpoints que pueden devolver colecciones grandes utilizan paginación.
+
+Actualmente se aplica a:
+
+```http
+GET /api/users
+GET /api/orders
+GET /api/deliveries
+```
+
+Ejemplo:
+
+```http
+GET /api/users?page=1&limit=10
+```
+
+La respuesta incluye información de paginación:
+
+```json
+{
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "totalPages": 3
+  }
+}
+```
+
+También se limita el tamaño máximo de las consultas y de los archivos cargados para evitar respuestas o cargas sin control.
+
+---
+
+## Testing funcional
+
+La API cuenta con una suite de tests funcionales implementada con:
+
+- Mocha
+- Chai
+- Supertest
+
+Para ejecutar todos los tests:
+
+```bash
+npm test
+```
+
+La suite utiliza un entorno de testing separado del entorno de desarrollo.
+
+Actualmente se validan:
+
+- rutas generales;
+- health check;
+- usuarios;
+- pedidos;
+- entregas;
+- mocking;
+- logger;
+- Swagger;
+- carga de archivos;
+- casos exitosos;
+- errores esperados.
+
+También se cubre el flujo principal de entregas:
+
+```text
+crear entrega
+→ obtener entrega
+→ actualizar estado
+→ validar errores
+→ eliminar entrega
+```
+
+Estado de la suite al momento de la entrega:
+
+```text
+53 passing
+```
+
+---
 
 ## Docker
 
-El proyecto incorpora un `Dockerfile` para ejecutar ShipNow dentro de un contenedor.
+ShipNow puede ejecutarse dentro de un contenedor Docker.
 
-La imagen utiliza Node.js 22 Alpine y configura el directorio de trabajo de la aplicación.
+El proyecto incluye:
 
-Las dependencias necesarias para producción se instalan mediante:
-
-```bash
-npm ci --omit=dev
+```text
+Dockerfile
+.dockerignore
+docker-compose.yml
 ```
 
-También se incorporó un archivo `.dockerignore` para evitar copiar archivos innecesarios o sensibles a la imagen.
+El `Dockerfile` utiliza una estrategia multi-stage para separar la instalación de dependencias de la imagen final utilizada para ejecutar la aplicación.
 
-Entre los archivos y directorios excluidos se encuentran:
+---
 
-- `node_modules`
-- archivos `.env`
-- `.git`
-- `logs`
-- `uploads`
-- `coverage`
-- `test`
-- archivos temporales
+## Construir la imagen Docker
 
-## Construcción de la imagen Docker
+Para construir manualmente la imagen:
 
-Desde la raíz del proyecto se puede construir la imagen mediante:
-
+```bash
 docker build -t shipnow-api .
+```
 
-La imagen generada se denomina `shipnow-api`.
+Luego puede ejecutarse proporcionando las variables de entorno necesarias.
 
-## Ejecución del contenedor
+---
 
-Para ejecutar la API dentro de Docker utilizando MongoDB instalado en la máquina host se utiliza:
+## Docker Compose
 
-docker run --env-file .env -e MONGODB_URI=mongodb://host.docker.internal:27017/shipnow-api-85760 -p 8080:8080 --name shipnow-container shipnow-api
+Docker Compose permite levantar de forma conjunta:
 
-Se utiliza `host.docker.internal` para permitir que el contenedor acceda al servidor MongoDB que se ejecuta en la máquina host.
+- ShipNow API;
+- MongoDB.
 
-La aplicación queda disponible en el puerto `8080`.
+Para construir y levantar los servicios:
 
-## Verificación con Docker
+```bash
+docker compose up --build
+```
 
-Con la aplicación ejecutándose dentro del contenedor se verificaron correctamente:
+También puede ejecutarse:
 
-- Conexión con MongoDB.
-- `GET /health`
-- `GET /api/docs`
-- `GET /api/users?page=1&limit=2`
-- Paginación de Users.
-- Paginación de Orders.
-- Paginación de Deliveries.
-- Documentación de `page` y `limit` en Swagger.
+```bash
+docker-compose up --build
+```
 
-También se ejecutó la aplicación con `NODE_ENV=production` para comprobar el comportamiento de los endpoints internos.
+en instalaciones que utilicen el comando clásico de Compose.
 
-## Tests
+La API queda disponible en:
 
-Luego de las modificaciones realizadas para esta pre-entrega se ejecutó nuevamente la suite completa de tests funcionales.
+```text
+http://localhost:8080
+```
 
-Resultado final:
+MongoDB utiliza el puerto:
 
-41 passing
+```text
+27017
+```
 
-Esto permitió comprobar que las optimizaciones y la preparación para Docker no afectaron el funcionamiento de las funcionalidades desarrolladas en los módulos anteriores.
+El servicio MongoDB incluye un healthcheck.
+
+La API depende del estado saludable de MongoDB, evitando iniciar la aplicación antes de que la base de datos esté disponible.
+
+Para comprobar el estado de los servicios:
+
+```bash
+docker compose ps
+```
+
+Se espera un estado similar a:
+
+```text
+shipnow-api     Up
+shipnow-mongo   Up (healthy)
+```
+
+Para detener los servicios:
+
+```bash
+docker compose down
+```
+
+---
+
+## Ejecución en producción
+
+En ambiente de producción:
+
+```env
+NODE_ENV=production
+```
+
+La aplicación mantiene disponibles los endpoints necesarios para operar y supervisar la API.
+
+Los endpoints internos destinados a desarrollo, como mocks y logger, se encuentran deshabilitados en producción.
+
+Por ejemplo, una consulta a un endpoint interno deshabilitado responde utilizando el manejo global de rutas inexistentes:
+
+```json
+{
+  "status": "error",
+  "error": "ROUTE_NOT_FOUND",
+  "message": "Ruta no encontrada"
+}
+```
+
+El health check permanece disponible para comprobar el estado del servicio.
+
+---
+
+## Seguridad y archivos ignorados
+
+El repositorio utiliza `.gitignore` para evitar versionar archivos locales o sensibles.
+
+No se incluyen:
+
+```text
+node_modules/
+.env
+.env.test
+logs/
+uploads/
+coverage/
+archivos temporales
+```
+
+El archivo `.env.example` sí se incluye porque funciona como guía de configuración y no contiene credenciales reales.
+
+`.dockerignore` también evita copiar archivos innecesarios o sensibles durante la construcción de la imagen Docker.
+
+---
+
+## Scripts disponibles
+
+### Desarrollo
+
+```bash
+npm run dev
+```
+
+### Producción / ejecución normal
+
+```bash
+npm start
+```
+
+### Tests
+
+```bash
+npm test
+```
+
+---
+
+## Respuestas de la API
+
+Las respuestas exitosas mantienen una estructura consistente.
+
+Ejemplo:
+
+```json
+{
+  "status": "success",
+  "message": "Operación realizada correctamente",
+  "payload": {}
+}
+```
+
+Las respuestas de error utilizan:
+
+```json
+{
+  "status": "error",
+  "error": "ERROR_CODE",
+  "message": "Mensaje descriptivo"
+}
+```
+
+---
+
+## Funcionalidades principales
+
+ShipNow integra en un único proyecto:
+
+- arquitectura por capas;
+- persistencia con MongoDB y Mongoose;
+- CRUD de las entidades principales;
+- gestión de estados de pedidos y entregas;
+- generación de datos mock;
+- carga de datos de prueba;
+- manejo global de errores;
+- errores personalizados;
+- logging con Winston;
+- documentación Swagger;
+- testing funcional automatizado;
+- carga de archivos con Multer;
+- validación de archivos PDF;
+- límite de tamaño de uploads;
+- almacenamiento de metadata de archivos;
+- paginación;
+- health check;
+- configuración por variables de entorno;
+- separación de entornos;
+- control de endpoints internos en producción;
+- Docker multi-stage;
+- Docker Compose;
+- MongoDB contenerizado con healthcheck.
+
+---
+
+## Estado del proyecto
+
+ShipNow se encuentra preparado para ser instalado, ejecutado, probado y revisado directamente desde el repositorio.
+
+Para una revisión rápida se recomienda seguir este orden:
+
+```text
+1. Configurar las variables de entorno
+2. Instalar las dependencias
+3. Ejecutar la API
+4. Probar GET /health
+5. Abrir /api/docs
+6. Probar los endpoints principales
+7. Ejecutar npm test
+8. Opcionalmente ejecutar el proyecto mediante Docker Compose
+```
+
+La documentación detallada de cada endpoint se encuentra disponible mediante Swagger.

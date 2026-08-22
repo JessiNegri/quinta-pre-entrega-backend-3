@@ -10,6 +10,7 @@ import ordersRouter from "./routes/orders.router.js";
 import deliveriesRouter from "./routes/deliveries.router.js";
 import mocksRouter from "./routes/mocks.router.js";
 import loggerRouter from "./routes/loggers.router.js";
+import healthRouter from "./routes/health.router.js";
 
 import { notFoundHandler } from "./middlewares/notFoundHandler.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -28,19 +29,11 @@ app.get("/", (req, res) => {
     });
 });
 
-app.get("/health", (req, res) => {
-    res.status(200).json({
-        status: "success",
-        environment: process.env.NODE_ENV,
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString()
-    });
-});
-
 app.use("/api/users", usersRouter);
 app.use("/api/stores", storesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/deliveries", deliveriesRouter);
+app.use("/health", healthRouter);
 
 if (process.env.NODE_ENV !== "production") {
     app.use("/api/mocks", mocksRouter);

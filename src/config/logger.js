@@ -1,6 +1,5 @@
-import { envConfig } from "./env.js";
 import winston from "winston";
-import DailyRotateFile from "winston-daily-rotate-file";
+import { envConfig } from "./env.js";
 
 const customLevels = {
     levels: {
@@ -13,30 +12,41 @@ const customLevels = {
     }
 };
 
+const logFormat = winston.format.combine(
+    winston.format.timestamp({
+        format: "YYYY-MM-DD HH:mm:ss"
+    }),
+    winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+        const details = Object.keys(meta).length
+            ? ` ${JSON.stringify(meta)}`
+            : "";
+
+        return `${timestamp} [${level}] ${stack || message}${details}`;
+    })
+);
+
+const transports = [
+    new winston.transports.File({
+        filename: "logs/error.log",
+        level: "error"
+    }),
+
+    new winston.transports.File({
+        filename: "logs/combined.log"
+    })
+];
+
+if (envConfig.nodeEnv === "development") {
+    transports.push(
+        new winston.transports.Console()
+    );
+}
+
 const logger = winston.createLogger({
     levels: customLevels.levels,
-
     level: envConfig.logLevel,
-
-    format: winston.format.combine(
-        winston.format.timestamp({
-            format: "YYYY-MM-DD HH:mm:ss"
-        }),
-        winston.format.printf(({ timestamp, level, message }) => {
-            return `${timestamp} [${level}] ${message}`;
-        })
-    ),
-
-    transports: [
-        new winston.transports.Console(),
-
-        new DailyRotateFile({
-            filename: "logs/error-%DATE%.log",
-            datePattern: "YYYY-MM-DD",
-            maxFiles: "7d",
-            level: "error"
-        })
-    ]
+    format: logFormat,
+    transports
 });
 
 export default logger;

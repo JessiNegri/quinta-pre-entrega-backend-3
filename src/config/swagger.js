@@ -42,11 +42,87 @@ export const swaggerSpec = swaggerJSDoc({
             {
                 name: "Logger",
                 description: "Herramientas de validación del sistema de logging"
+            },
+            {
+                name: "Health",
+                description: "Estado y disponibilidad de la API"
             }
         ],
 
         components: {
             schemas: {
+
+                // ==========================================
+                // PAGINATION
+                // ==========================================
+
+                Pagination: {
+                    type: "object",
+                    properties: {
+                        page: {
+                            type: "integer",
+                            example: 1
+                        },
+                        limit: {
+                            type: "integer",
+                            example: 10
+                        },
+                        total: {
+                            type: "integer",
+                            example: 25
+                        },
+                        totalPages: {
+                            type: "integer",
+                            example: 3
+                        }
+                    }
+                },
+
+                // ==========================================
+                // USER DOCUMENT
+                // ==========================================
+
+                UserDocument: {
+                    type: "object",
+                    properties: {
+                        _id: {
+                            type: "string",
+                            example: "6a7a0aeb0d815c98539d9399"
+                        },
+                        originalName: {
+                            type: "string",
+                            example: "documento.pdf"
+                        },
+                        fileName: {
+                            type: "string",
+                            example: "550e8400-e29b-41d4-a716-446655440000.pdf"
+                        },
+                        path: {
+                            type: "string",
+                            example: "uploads/documents/550e8400-e29b-41d4-a716-446655440000.pdf"
+                        },
+                        mimetype: {
+                            type: "string",
+                            example: "application/pdf"
+                        },
+                        size: {
+                            type: "integer",
+                            example: 395133
+                        },
+                        type: {
+                            type: "string",
+                            example: "user_document"
+                        },
+                        createdAt: {
+                            type: "string",
+                            format: "date-time"
+                        },
+                        updatedAt: {
+                            type: "string",
+                            format: "date-time"
+                        }
+                    }
+                },
 
                 // ==========================================
                 // USER
@@ -85,9 +161,8 @@ export const swaggerSpec = swaggerJSDoc({
                         documents: {
                             type: "array",
                             items: {
-                                type: "string"
-                            },
-                            example: []
+                                $ref: "#/components/schemas/UserDocument"
+                            }
                         },
                         createdAt: {
                             type: "string",
@@ -139,9 +214,8 @@ export const swaggerSpec = swaggerJSDoc({
                         documents: {
                             type: "array",
                             items: {
-                                type: "string"
-                            },
-                            example: []
+                                $ref: "#/components/schemas/UserDocument"
+                            }
                         }
                     }
                 },
@@ -162,6 +236,9 @@ export const swaggerSpec = swaggerJSDoc({
                             items: {
                                 $ref: "#/components/schemas/User"
                             }
+                        },
+                        pagination: {
+                            $ref: "#/components/schemas/Pagination"
                         }
                     }
                 },
@@ -457,6 +534,9 @@ export const swaggerSpec = swaggerJSDoc({
                             items: {
                                 $ref: "#/components/schemas/Order"
                             }
+                        },
+                        pagination: {
+                            $ref: "#/components/schemas/Pagination"
                         }
                     }
                 },
@@ -509,9 +589,8 @@ export const swaggerSpec = swaggerJSDoc({
                         documents: {
                             type: "array",
                             items: {
-                                type: "string"
-                            },
-                            example: []
+                                $ref: "#/components/schemas/UserDocument"
+                            }
                         },
                         createdAt: {
                             type: "string",
@@ -520,6 +599,46 @@ export const swaggerSpec = swaggerJSDoc({
                         updatedAt: {
                             type: "string",
                             format: "date-time"
+                        }
+                    }
+                },
+
+                // ==========================================
+                // DELIVERY PROOF
+                // ==========================================
+
+                DeliveryProof: {
+                    type: "object",
+                    nullable: true,
+                    properties: {
+                        originalName: {
+                            type: "string",
+                            example: "comprobante.pdf"
+                        },
+                        fileName: {
+                            type: "string",
+                            example: "550e8400-e29b-41d4-a716-446655440000.pdf"
+                        },
+                        path: {
+                            type: "string",
+                            example: "uploads/proofs/550e8400-e29b-41d4-a716-446655440000.pdf"
+                        },
+                        mimetype: {
+                            type: "string",
+                            example: "application/pdf"
+                        },
+                        size: {
+                            type: "integer",
+                            example: 395133
+                        },
+                        documentType: {
+                            type: "string",
+                            example: "delivery-proof"
+                        },
+                        uploadedAt: {
+                            type: "string",
+                            format: "date-time",
+                            example: "2026-08-18T20:00:00.000Z"
                         }
                     }
                 },
@@ -560,6 +679,9 @@ export const swaggerSpec = swaggerJSDoc({
                             format: "date-time",
                             nullable: true,
                             example: null
+                        },
+                        proof: {
+                            $ref: "#/components/schemas/DeliveryProof"
                         },
                         createdAt: {
                             type: "string",
@@ -602,6 +724,9 @@ export const swaggerSpec = swaggerJSDoc({
                             format: "date-time",
                             nullable: true,
                             example: null
+                        },
+                        proof: {
+                            $ref: "#/components/schemas/DeliveryProof"
                         },
                         createdAt: {
                             type: "string",
@@ -681,6 +806,9 @@ export const swaggerSpec = swaggerJSDoc({
                             items: {
                                 $ref: "#/components/schemas/Delivery"
                             }
+                        },
+                        pagination: {
+                            $ref: "#/components/schemas/Pagination"
                         }
                     }
                 },
@@ -737,6 +865,33 @@ export const swaggerSpec = swaggerJSDoc({
                         message: {
                             type: "string",
                             example: "Usuario no encontrado"
+                        }
+                    }
+                },
+
+                // ==========================================
+                // HEALTH
+                // ==========================================
+
+                HealthResponse: {
+                    type: "object",
+                    properties: {
+                        status: {
+                            type: "string",
+                            example: "success"
+                        },
+                        environment: {
+                            type: "string",
+                            example: "development"
+                        },
+                        uptime: {
+                            type: "number",
+                            example: 42.35
+                        },
+                        timestamp: {
+                            type: "string",
+                            format: "date-time",
+                            example: "2026-08-18T20:00:00.000Z"
                         }
                     }
                 },
